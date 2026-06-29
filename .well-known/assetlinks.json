@@ -1,0 +1,16 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.willparton.hitch",
+      "sha256_cert_fingerprints": [
+        "A0:A4:4D:72:B1:5E:5C:0C:E4:28:6A:58:CF:B8:15:B4:BB:CD:F6:5E:6D:A5:34:23:9F:7E:35:B3:96:8E:B0:C2",
+        "20:60:CD:7F:4E:70:17:E5:F4:AB:DB:13:D8:42:88:ED:3C:CA:80:2E:EF:A8:E7:F8:37:38:0B:1D:35:BD:70:EA"
+      ]
+    }
+  }
+]
