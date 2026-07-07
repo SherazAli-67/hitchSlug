@@ -4,7 +4,12 @@
     "details": [
       {
         "appID": "482QRJ4E4K.com.zenmarkx.zenmark",
-        "paths": ["/player", "/player/*"]
+        "paths": [
+          "/pickleball-partners/player/*",
+          "/tennis-partners/player/*",
+          "/padel-partners/player/*",
+          "/player/*"
+        ]
       }
     ]
   }
