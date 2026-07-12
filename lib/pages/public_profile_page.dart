@@ -65,6 +65,11 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     await Clipboard.setData(ClipboardData(text: Uri.base.toString()));
   }
 
+  Future<void> _goToLanding() async {
+    final landingUri = Uri.parse('${Uri.base.origin}/');
+    await launchUrl(landingUri, webOnlyWindowName: '_self');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,6 +103,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
             return Column(
               children: [
                 _ProfileHeader(
+                  onLogoTap: _goToLanding,
                   onDownloadApp: () => _openUrl(StringConst.appStoreUrl),
                 ),
                 Expanded(
@@ -119,8 +125,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                                 child: isDesktop
                                     ? _DesktopHero(
                                         user: user,
-                                        onRequestHitch: () =>
-                                            _openUri(Uri.base),
+                                        onRequestHitch: () => _openUri(Uri.base),
                                       )
                                     : _MobileHero(
                                         user: user,
@@ -201,8 +206,12 @@ class _MessageState extends StatelessWidget {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.onDownloadApp});
+  const _ProfileHeader({
+    required this.onLogoTap,
+    required this.onDownloadApp,
+  });
 
+  final VoidCallback onLogoTap;
   final VoidCallback onDownloadApp;
 
   @override
@@ -212,13 +221,19 @@ class _ProfileHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            StringConst.hitch,
-            style: TextStyle(
-              fontFamily: StringConst.fontFamily,
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primaryGreenColor,
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: onLogoTap,
+              child: Text(
+                StringConst.hitch,
+                style: TextStyle(
+                  fontFamily: StringConst.fontFamily,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryGreenColor,
+                ),
+              ),
             ),
           ),
           Material(
