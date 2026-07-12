@@ -4,7 +4,7 @@ class StringConst {
 
   static const hitch = 'Hitch';
   static const downloadApp = 'Download App';
-  static const socialBadge = '#1 Social App for Athletes';
+  static const socialBadge = '# Not a dating app.';
   static const headlineLead = 'Connect with Your Next';
   static const headlineAccent = 'Match Locally';
   static const heroBody =
