@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:hitch_profile_slug_deeplink/constants/string_const.dart';
 import 'package:hitch_profile_slug_deeplink/main.dart';
 import 'package:hitch_profile_slug_deeplink/pages/landing_page.dart';
 import 'package:hitch_profile_slug_deeplink/profile/profile_slug.dart';
@@ -31,9 +32,8 @@ void main() {
       MyApp(uri: Uri.parse('https://links.hitchplayerfinder.com/')),
     );
     expect(find.byType(LandingPage), findsOneWidget);
-    expect(
-      find.text('Pickleball, Padel & Tennis Partners Near You'),
-      findsOneWidget,
-    );
+    expect(find.text(StringConst.downloadApp), findsOneWidget);
+    expect(find.textContaining(StringConst.headlineAccent), findsOneWidget);
+    expect(find.text(StringConst.socialBadge), findsOneWidget);
   });
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'constants/string_const.dart';
+import 'core/app_colors.dart';
 import 'pages/landing_page.dart';
 import 'pages/public_profile_page.dart';
 import 'profile/profile_slug.dart';
@@ -28,10 +30,15 @@ class MyApp extends StatelessWidget {
     }
 
     return MaterialApp(
-      title: 'Hitch: Find Players & Court',
+      title: StringConst.webAppTitle,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff90B953)),
         useMaterial3: true,
+        fontFamily: StringConst.fontFamily,
+        scaffoldBackgroundColor: Colors.white,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primaryGreenColor,
+          primary: AppColors.primaryGreenColor,
+        ),
       ),
       home: home,
     );

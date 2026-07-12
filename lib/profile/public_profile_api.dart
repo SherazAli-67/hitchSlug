@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import 'public_profile.dart';
+import '../core/models/user_model.dart';
 
 class PublicProfileNotFoundException implements Exception {}
 
@@ -20,7 +20,7 @@ class PublicProfileApi {
 
   final http.Client _client;
 
-  Future<PublicProfile> fetchBySlug(String slug) async {
+  Future<UserModel> fetchBySlug(String slug) async {
     final uri = Uri.parse(_baseUrl).replace(queryParameters: {'slug': slug});
     final response = await _client.get(uri);
 
@@ -39,6 +39,6 @@ class PublicProfileApi {
       throw PublicProfileApiException('Unexpected response shape');
     }
 
-    return PublicProfile.fromJson(decoded);
+    return UserModel.fromPublicJson(decoded);
   }
 }
