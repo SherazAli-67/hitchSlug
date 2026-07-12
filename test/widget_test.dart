@@ -1,30 +1,39 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hitch_profile_slug_deeplink/main.dart';
+import 'package:hitch_profile_slug_deeplink/pages/landing_page.dart';
+import 'package:hitch_profile_slug_deeplink/profile/profile_slug.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  test('extractProfileSlug reads last segment after player', () {
+    expect(
+      extractProfileSlug(
+        Uri.parse('https://links.hitchplayerfinder.com/player/thomas-jp'),
+      ),
+      'thomas-jp',
+    );
+    expect(
+      extractProfileSlug(
+        Uri.parse(
+          'https://links.hitchplayerfinder.com/pickleball-partners/player/ottawa/3.0-3.99-dupr/thomas-jp',
+        ),
+      ),
+      'thomas-jp',
+    );
+    expect(
+      extractProfileSlug(Uri.parse('https://links.hitchplayerfinder.com/')),
+      isNull,
+    );
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('landing page renders for root path', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MyApp(uri: Uri.parse('https://links.hitchplayerfinder.com/')),
+    );
+    expect(find.byType(LandingPage), findsOneWidget);
+    expect(
+      find.text('Pickleball, Padel & Tennis Partners Near You'),
+      findsOneWidget,
+    );
   });
 }
