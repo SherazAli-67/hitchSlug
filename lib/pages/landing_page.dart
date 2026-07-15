@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:hitch_profile_slug_deeplink/core/app_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../constants/string_const.dart';
 import '../core/app_colors.dart';
+import '../widgets/page_shell.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
@@ -16,95 +18,31 @@ class LandingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _LandingHeader(
-              onDownloadApp: () => _openUrl(StringConst.appStoreUrl),
+    return PageShell(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
+          return Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isDesktop ? 48 : 20,
+              vertical: isDesktop ? 32 : 24,
             ),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isDesktop =
-                      constraints.maxWidth >= _desktopBreakpoint;
-                  return SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isDesktop ? 48 : 20,
-                      vertical: isDesktop ? 24 : 16,
-                    ),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight - 40,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1100),
+                child: isDesktop
+                    ? _DesktopHero(
+                        onAppStore: () => _openUrl(StringConst.appStoreUrl),
+                        onPlayStore: () => _openUrl(StringConst.playStoreUrl),
+                      )
+                    : _MobileHero(
+                        onAppStore: () => _openUrl(StringConst.appStoreUrl),
+                        onPlayStore: () => _openUrl(StringConst.playStoreUrl),
                       ),
-                      child: isDesktop
-                          ? _DesktopHero(
-                              onAppStore: () =>
-                                  _openUrl(StringConst.appStoreUrl),
-                              onPlayStore: () =>
-                                  _openUrl(StringConst.playStoreUrl),
-                            )
-                          : _MobileHero(
-                              onAppStore: () =>
-                                  _openUrl(StringConst.appStoreUrl),
-                              onPlayStore: () =>
-                                  _openUrl(StringConst.playStoreUrl),
-                            ),
-                    ),
-                  );
-                },
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LandingHeader extends StatelessWidget {
-  const _LandingHeader({required this.onDownloadApp});
-
-  final VoidCallback onDownloadApp;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            StringConst.hitch,
-            style: TextStyle(
-              fontFamily: StringConst.fontFamily,
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: Colors.black,
-            ),
-          ),
-          Material(
-            color: AppColors.primaryGreenColor,
-            borderRadius: BorderRadius.circular(999),
-            child: InkWell(
-              onTap: onDownloadApp,
-              borderRadius: BorderRadius.circular(999),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                child: Text(
-                  StringConst.downloadApp,
-                  style: TextStyle(
-                    fontFamily: StringConst.fontFamily,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -255,11 +193,11 @@ class _HeroCopy extends StatelessWidget {
           runSpacing: 12,
           children: [
             _StoreBadgeButton(
-              assetPath: StringConst.appStoreBadgeAsset,
+              assetPath: AppIcons.appStoreBadgeAsset,
               onTap: onAppStore,
             ),
             _StoreBadgeButton(
-              assetPath: StringConst.playStoreBadgeAsset,
+              assetPath: AppIcons.playStoreBadgeAsset,
               onTap: onPlayStore,
             ),
           ],
@@ -321,7 +259,7 @@ class _PhoneVisual extends StatelessWidget {
               ),
             ),
             Image.asset(
-              StringConst.mobilePhoneAsset,
+              AppIcons.mobilePhoneAsset,
               fit: BoxFit.contain,
             ),
           ],

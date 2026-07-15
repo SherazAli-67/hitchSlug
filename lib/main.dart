@@ -31,13 +31,14 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       title: StringConst.webAppTitle,
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: StringConst.fontFamily,
         scaffoldBackgroundColor: Colors.white,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primaryGreenColor,
-          primary: AppColors.primaryGreenColor,
+          seedColor: AppColors.primaryColorVariant1,
+          primary: AppColors.primaryColorVariant1,
         ),
       ),
       home: home,

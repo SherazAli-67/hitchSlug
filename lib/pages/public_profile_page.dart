@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../constants/string_const.dart';
 import '../core/app_colors.dart';
 import '../core/models/user_model.dart';
 import '../profile/public_profile_api.dart';
+import '../widgets/page_shell.dart';
 
 class ProfileNotFoundPage extends StatelessWidget {
   const ProfileNotFoundPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: _MessageState(
-          title: StringConst.playerNotFound,
-          subtitle: StringConst.playerNotFoundSubtitle,
-        ),
+    return const PageShell(
+      centerBody: true,
+      child: _MessageState(
+        title: StringConst.playerNotFound,
+        subtitle: StringConst.playerNotFoundSubtitle,
       ),
     );
   }
@@ -57,14 +55,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  Future<void> _openUrl(String url) async {
-    await _openUri(Uri.parse(url));
-  }
-
-  Future<void> _shareProfile() async {
-    await Clipboard.setData(ClipboardData(text: Uri.base.toString()));
-  }
-
   Future<void> _goToLanding() async {
     final landingUri = Uri.parse('${Uri.base.origin}/');
     await launchUrl(landingUri, webOnlyWindowName: '_self');
@@ -72,92 +62,76 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: FutureBuilder<UserModel>(
-          future: _future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.primaryGreenColor,
-                ),
-              );
-            }
+    return FutureBuilder<UserModel>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return PageShell(
+            onLogoTap: _goToLanding,
+            centerBody: true,
+            child: const CircularProgressIndicator(
+              color: AppColors.primaryGreenColor,
+            ),
+          );
+        }
 
-            if (snapshot.hasError) {
-              final isNotFound =
-                  snapshot.error is PublicProfileNotFoundException;
-              return _MessageState(
-                title: isNotFound
-                    ? StringConst.playerNotFound
-                    : StringConst.somethingWentWrong,
-                subtitle: isNotFound
-                    ? StringConst.playerNotFoundSubtitle
-                    : StringConst.tryAgainLater,
-              );
-            }
+        if (snapshot.hasError) {
+          final isNotFound = snapshot.error is PublicProfileNotFoundException;
+          return PageShell(
+            onLogoTap: _goToLanding,
+            centerBody: true,
+            child: _MessageState(
+              title: isNotFound
+                  ? StringConst.playerNotFound
+                  : StringConst.somethingWentWrong,
+              subtitle: isNotFound
+                  ? StringConst.playerNotFoundSubtitle
+                  : StringConst.tryAgainLater,
+            ),
+          );
+        }
 
-            final user = snapshot.data!;
-            return Column(
-              children: [
-                _ProfileHeader(
-                  onLogoTap: _goToLanding,
-                  onDownloadApp: () => _openUrl(StringConst.appStoreUrl),
-                ),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isDesktop =
-                          constraints.maxWidth >= _desktopBreakpoint;
-                      return SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isDesktop ? 48 : 20,
-                                vertical: isDesktop ? 32 : 20,
+        final user = snapshot.data!;
+        return PageShell(
+          onLogoTap: _goToLanding,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
+              return Column(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isDesktop ? 48 : 20,
+                      vertical: isDesktop ? 40 : 28,
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1100),
+                        child: isDesktop
+                            ? _DesktopHero(
+                                user: user,
+                                onRequestHitch: () => _openUri(Uri.base),
+                              )
+                            : _MobileHero(
+                                user: user,
+                                onRequestHitch: () => _openUri(Uri.base),
                               ),
-                              child: ConstrainedBox(
-                                constraints:
-                                    const BoxConstraints(maxWidth: 1100),
-                                child: isDesktop
-                                    ? _DesktopHero(
-                                        user: user,
-                                        onRequestHitch: () => _openUri(Uri.base),
-                                      )
-                                    : _MobileHero(
-                                        user: user,
-                                        onRequestHitch: () =>
-                                            _openUri(Uri.base),
-                                      ),
-                              ),
-                            ),
-                            if (user.uploadedSportsPhotos.isNotEmpty)
-                              _ActionGallery(
-                                photoUrls: user.uploadedSportsPhotos
-                                    .map((e) => e.url)
-                                    .toList(),
-                                isDesktop: isDesktop,
-                              ),
-                            _ProfileFooter(
-                              isDesktop: isDesktop,
-                              onShare: _shareProfile,
-                              onChat: () => _openUri(Uri.base),
-                              onOpenLink: _openUrl,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+                  if (user.uploadedSportsPhotos.isNotEmpty)
+                    _ActionGallery(
+                      photoUrls: user.uploadedSportsPhotos
+                          .map((e) => e.url)
+                          .toList(),
+                      isDesktop: isDesktop,
+                    ),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -173,87 +147,28 @@ class _MessageState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: StringConst.fontFamily,
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: StringConst.fontFamily,
-                fontSize: 15,
-                color: Color(0xFF5A5A5A),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({
-    required this.onLogoTap,
-    required this.onDownloadApp,
-  });
-
-  final VoidCallback onLogoTap;
-  final VoidCallback onDownloadApp;
-
-  @override
-  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: onLogoTap,
-              child: Text(
-                StringConst.hitch,
-                style: TextStyle(
-                  fontFamily: StringConst.fontFamily,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryGreenColor,
-                ),
-              ),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: StringConst.fontFamily,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          Material(
-            color: AppColors.primaryGreenColor,
-            borderRadius: BorderRadius.circular(999),
-            child: InkWell(
-              onTap: onDownloadApp,
-              borderRadius: BorderRadius.circular(999),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                child: Text(
-                  StringConst.downloadApp,
-                  style: TextStyle(
-                    fontFamily: StringConst.fontFamily,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: StringConst.fontFamily,
+              fontSize: 15,
+              color: Color(0xFF5A5A5A),
             ),
           ),
         ],
@@ -286,7 +201,7 @@ class _DesktopHero extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 40),
+        const SizedBox(width: 48),
         Expanded(
           flex: 6,
           child: _ProfileDetails(user: user),
@@ -313,7 +228,7 @@ class _MobileHero extends StatelessWidget {
         _ProfilePhoto(url: user.profilePicture, height: 320),
         const SizedBox(height: 16),
         _RequestHitchButton(onPressed: onRequestHitch),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         _ProfileDetails(user: user),
       ],
     );
@@ -424,7 +339,7 @@ class _ProfileDetails extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
         ],
         Text(
           user.userName.isNotEmpty ? user.userName : 'Player',
@@ -437,7 +352,7 @@ class _ProfileDetails extends StatelessWidget {
           ),
         ),
         if (location.isNotEmpty || gender.isNotEmpty) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Row(
             children: [
               if (location.isNotEmpty) ...[
@@ -479,7 +394,7 @@ class _ProfileDetails extends StatelessWidget {
             ],
           ),
         ],
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         LayoutBuilder(
           builder: (context, constraints) {
             final sideBySide = constraints.maxWidth >= 360;
@@ -530,7 +445,7 @@ class _ProfileDetails extends StatelessWidget {
           },
         ),
         if (user.bio.isNotEmpty) ...[
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           _BioCard(bio: user.bio),
         ],
       ],
@@ -652,13 +567,7 @@ class _BioCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: const Color(0xFFE8E8E8)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -705,7 +614,7 @@ class _ActionGallery extends StatelessWidget {
       color: const Color(0xFFF5F5F5),
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 48 : 20,
-        vertical: 40,
+        vertical: 48,
       ),
       child: Center(
         child: ConstrainedBox(
@@ -730,7 +639,7 @@ class _ActionGallery extends StatelessWidget {
                   color: Color(0xFF757575),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               if (isDesktop && urls.length >= 3)
                 _DesktopGalleryGrid(urls: urls)
               else
@@ -851,189 +760,6 @@ class _GalleryImage extends StatelessWidget {
           color: const Color(0xFFE0E0E0),
           alignment: Alignment.center,
           child: const Icon(Icons.image_not_supported_outlined),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileFooter extends StatelessWidget {
-  const _ProfileFooter({
-    required this.isDesktop,
-    required this.onShare,
-    required this.onChat,
-    required this.onOpenLink,
-  });
-
-  final bool isDesktop;
-  final VoidCallback onShare;
-  final VoidCallback onChat;
-  final Future<void> Function(String url) onOpenLink;
-
-  @override
-  Widget build(BuildContext context) {
-    final links = [
-      (StringConst.privacyPolicy, StringConst.privacyPolicyUrl),
-      (StringConst.termsOfService, StringConst.termsOfServiceUrl),
-      (StringConst.safetyCenter, StringConst.safetyCenterUrl),
-      (StringConst.support, StringConst.supportUrl),
-      (StringConst.careers, StringConst.careersUrl),
-    ];
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        isDesktop ? 48 : 20,
-        32,
-        isDesktop ? 48 : 20,
-        40,
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: isDesktop
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _footerBrand()),
-                    Expanded(
-                      flex: 2,
-                      child: Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 20,
-                        runSpacing: 8,
-                        children: [
-                          for (final link in links)
-                            _FooterLink(
-                              label: link.$1,
-                              onTap: () => onOpenLink(link.$2),
-                            ),
-                        ],
-                      ),
-                    ),
-                    _FooterIcons(onShare: onShare, onChat: onChat),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _footerBrand(),
-                    const SizedBox(height: 20),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 8,
-                      children: [
-                        for (final link in links)
-                          _FooterLink(
-                            label: link.$1,
-                            onTap: () => onOpenLink(link.$2),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    _FooterIcons(onShare: onShare, onChat: onChat),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-
-  Widget _footerBrand() {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          StringConst.hitch,
-          style: TextStyle(
-            fontFamily: StringConst.fontFamily,
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        SizedBox(height: 6),
-        Text(
-          StringConst.footerTagline,
-          style: TextStyle(
-            fontFamily: StringConst.fontFamily,
-            fontSize: 12,
-            color: Color(0xFF757575),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FooterLink extends StatelessWidget {
-  const _FooterLink({
-    required this.label,
-    required this.onTap,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontFamily: StringConst.fontFamily,
-            fontSize: 13,
-            color: Color(0xFF616161),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FooterIcons extends StatelessWidget {
-  const _FooterIcons({
-    required this.onShare,
-    required this.onChat,
-  });
-
-  final VoidCallback onShare;
-  final VoidCallback onChat;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _CircleIconButton(icon: Icons.share_outlined, onTap: onShare),
-        const SizedBox(width: 10),
-        _CircleIconButton(icon: Icons.chat_bubble_outline, onTap: onChat),
-      ],
-    );
-  }
-}
-
-class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFF0F0F0),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Icon(icon, size: 18, color: const Color(0xFF616161)),
         ),
       ),
     );

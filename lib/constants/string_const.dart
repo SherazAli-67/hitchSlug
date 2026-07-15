@@ -15,9 +15,13 @@ class StringConst {
   static const playStoreUrl =
       'https://play.google.com/store/apps/details?id=com.willparton.hitch';
 
-  static const mobilePhoneAsset = 'assets/pngs/mobile_phone_img.png';
-  static const appStoreBadgeAsset = 'assets/pngs/download_on_appstore.png';
-  static const playStoreBadgeAsset = 'assets/pngs/download_on_playstore.png';
+  static const followUs = 'Follow us';
+  static const getInTouch = 'Get in touch:';
+  static const contactEmail = 'will@hitchplayerfinders.com';
+  static const contactEmailUrl = 'mailto:will@hitchplayerfinders.com';
+  static const instagramUrl = 'https://www.instagram.com/hitch.pf/';
+  static const footerRegions = 'US | CA | UK | AUS';
+  static const footerCopyright = '© 2026 · Hitch, Limited Partnership';
 
   static const profileSlugKey = 'profileSlug';
   static const locationStringArrayKey = 'locationStringArray';
@@ -50,7 +54,6 @@ class StringConst {
       'This profile link may be invalid or outdated.';
   static const somethingWentWrong = 'Something went wrong';
   static const tryAgainLater = 'Please try again later.';
-  static const footerTagline = '© 2024 Hitch Sports Networking. Elevate Your Game.';
   static const privacyPolicy = 'Privacy Policy';
   static const termsOfService = 'Terms of Service';
   static const safetyCenter = 'Safety Center';

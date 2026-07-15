@@ -4,6 +4,8 @@ import 'package:hitch_profile_slug_deeplink/constants/string_const.dart';
 import 'package:hitch_profile_slug_deeplink/main.dart';
 import 'package:hitch_profile_slug_deeplink/pages/landing_page.dart';
 import 'package:hitch_profile_slug_deeplink/profile/profile_slug.dart';
+import 'package:hitch_profile_slug_deeplink/widgets/app_footer.dart';
+import 'package:hitch_profile_slug_deeplink/widgets/app_header.dart';
 
 void main() {
   test('extractProfileSlug reads last segment after player', () {
@@ -32,8 +34,11 @@ void main() {
       MyApp(uri: Uri.parse('https://links.hitchplayerfinder.com/')),
     );
     expect(find.byType(LandingPage), findsOneWidget);
-    expect(find.text(StringConst.downloadApp), findsOneWidget);
+    expect(find.byType(AppHeader), findsOneWidget);
+    expect(find.byType(AppFooter), findsOneWidget);
     expect(find.textContaining(StringConst.headlineAccent), findsOneWidget);
     expect(find.text(StringConst.socialBadge), findsOneWidget);
+    expect(find.text(StringConst.followUs), findsOneWidget);
+    expect(find.text(StringConst.footerCopyright), findsOneWidget);
   });
 }
