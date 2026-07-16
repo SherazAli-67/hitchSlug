@@ -14,7 +14,7 @@ class AppHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: AppColors.backgroundColor,
+      color: AppColors.headerFooterColor,
       child: SafeArea(
         bottom: false,
         child: SizedBox(

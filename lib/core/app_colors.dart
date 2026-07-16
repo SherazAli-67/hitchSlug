@@ -11,4 +11,5 @@ class AppColors {
   static const primaryDarkColor = Color(0xff8EA215);
   static const textPrimaryColor = Color(0xff4f5d00);
   static const darkGreyTextColor = Color(0xff595959);
+  static const headerFooterColor = Color(0xffDCF33B);
 }

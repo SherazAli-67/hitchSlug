@@ -26,7 +26,7 @@ class AppFooter extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ColoredBox(
-              color: AppColors.backgroundColor,
+              color: AppColors.headerFooterColor,
               child: Padding(
                 padding: EdgeInsets.fromLTRB(horizontal, 36, horizontal, 36),
                 child: Column(
