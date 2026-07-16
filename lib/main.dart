@@ -21,15 +21,14 @@ class MyApp extends StatelessWidget {
     final slug = extractProfileSlug(resolvedUri);
 
     final Widget home;
-   /* if (isLandingPath(resolvedUri)) {
+    if (isLandingPath(resolvedUri)) {
       home = const LandingPage();
     } else if (slug != null) {
       home = PublicProfilePage(slug: slug);
     } else {
       home = const ProfileNotFoundPage();
-    }*/
+    }
 
-    home = PublicProfilePage(slug: 'sheraz-nazir');
     return MaterialApp(
       title: StringConst.webAppTitle,
       debugShowCheckedModeBanner: false,
