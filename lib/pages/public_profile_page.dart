@@ -51,10 +51,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     _future = _api.fetchBySlug(widget.slug);
   }
 
-  Future<void> _openUri(Uri uri) async {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
   Future<void> _goToLanding() async {
     final landingUri = Uri.parse('${Uri.base.origin}/');
     await launchUrl(landingUri, webOnlyWindowName: '_self');
@@ -97,36 +93,20 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
-              return Column(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isDesktop ? 48 : 20,
-                      vertical: isDesktop ? 40 : 28,
-                    ),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1100),
-                        child: isDesktop
-                            ? _DesktopHero(
-                                user: user,
-                                onRequestHitch: () => _openUri(Uri.base),
-                              )
-                            : _MobileHero(
-                                user: user,
-                                onRequestHitch: () => _openUri(Uri.base),
-                              ),
-                      ),
-                    ),
-                  ),
-                  if (user.uploadedSportsPhotos.isNotEmpty)
-                    _ActionGallery(
-                      photoUrls: user.uploadedSportsPhotos
-                          .map((e) => e.url)
-                          .toList(),
+              return Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isDesktop ? 48 : 20,
+                  vertical: isDesktop ? 40 : 28,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1100),
+                    child: _ProfileHero(
+                      user: user,
                       isDesktop: isDesktop,
                     ),
-                ],
+                  ),
+                ),
               );
             },
           ),
@@ -177,57 +157,38 @@ class _MessageState extends StatelessWidget {
   }
 }
 
-class _DesktopHero extends StatelessWidget {
-  const _DesktopHero({
+class _ProfileHero extends StatelessWidget {
+  const _ProfileHero({
     required this.user,
-    required this.onRequestHitch,
+    required this.isDesktop,
   });
 
   final UserModel user;
-  final VoidCallback onRequestHitch;
+  final bool isDesktop;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 4,
-          child: Column(
-            children: [
-              _ProfilePhoto(url: user.profilePicture, height: 420),
-              const SizedBox(height: 16),
-              _RequestHitchButton(onPressed: onRequestHitch),
-            ],
+    if (isDesktop) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 45,
+            child: _PhotoCollage(user: user),
           ),
-        ),
-        const SizedBox(width: 48),
-        Expanded(
-          flex: 6,
-          child: _ProfileDetails(user: user),
-        ),
-      ],
-    );
-  }
-}
+          const SizedBox(width: 40),
+          Expanded(
+            flex: 55,
+            child: _ProfileDetails(user: user),
+          ),
+        ],
+      );
+    }
 
-class _MobileHero extends StatelessWidget {
-  const _MobileHero({
-    required this.user,
-    required this.onRequestHitch,
-  });
-
-  final UserModel user;
-  final VoidCallback onRequestHitch;
-
-  @override
-  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _ProfilePhoto(url: user.profilePicture, height: 320),
-        const SizedBox(height: 16),
-        _RequestHitchButton(onPressed: onRequestHitch),
+        _PhotoCollage(user: user),
         const SizedBox(height: 28),
         _ProfileDetails(user: user),
       ],
@@ -235,30 +196,63 @@ class _MobileHero extends StatelessWidget {
   }
 }
 
-class _ProfilePhoto extends StatelessWidget {
-  const _ProfilePhoto({
-    required this.url,
-    required this.height,
-  });
+class _PhotoCollage extends StatelessWidget {
+  const _PhotoCollage({required this.user});
 
-  final String url;
-  final double height;
+  final UserModel user;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: AspectRatio(
-        aspectRatio: 3 / 4,
-        child: url.isNotEmpty
-            ? Image.network(
-                url,
-                fit: BoxFit.cover,
-                height: height,
-                errorBuilder: (_, _, _) => _placeholder(),
-              )
-            : _placeholder(),
-      ),
+    final sportsUrls =
+        user.uploadedSportsPhotos.map((e) => e.url).where((u) => u.isNotEmpty);
+    final sportsList = sportsUrls.toList();
+    final bottomLeft = sportsList.isNotEmpty ? sportsList[0] : '';
+    final bottomRight = sportsList.length > 1 ? sportsList[1] : '';
+
+    return Column(
+      children: [
+        AspectRatio(
+          aspectRatio: 16 / 10,
+          child: _GridImage(url: user.profilePicture),
+        ),
+        const SizedBox(height: 8),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final side = (constraints.maxWidth - 8) / 2;
+            return SizedBox(
+              height: side,
+              child: Row(
+                children: [
+                  Expanded(child: _GridImage(url: bottomLeft)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _GridImage(url: bottomRight)),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _GridImage extends StatelessWidget {
+  const _GridImage({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.expand(
+      child: url.isEmpty
+          ? _placeholder()
+          : Image.network(
+              url,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, _, _) => _placeholder(),
+            ),
     );
   }
 
@@ -266,47 +260,7 @@ class _ProfilePhoto extends StatelessWidget {
     return Container(
       color: const Color(0xFFEEEEEE),
       alignment: Alignment.center,
-      child: const Icon(Icons.person, size: 72, color: Color(0xFFBDBDBD)),
-    );
-  }
-}
-
-class _RequestHitchButton extends StatelessWidget {
-  const _RequestHitchButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: Material(
-        color: AppColors.primaryGreenColor,
-        borderRadius: BorderRadius.circular(999),
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(999),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.bolt, color: Colors.white, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  StringConst.requestHitch,
-                  style: TextStyle(
-                    fontFamily: StringConst.fontFamily,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      child: const Icon(Icons.person, size: 48, color: Color(0xFFBDBDBD)),
     );
   }
 }
@@ -475,7 +429,7 @@ class _SportChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: highlighted
-            ? AppColors.backgroundColor
+            ? AppColors.headerFooterColor
             : const Color(0xFFF0F0F0),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -591,176 +545,6 @@ class _BioCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ActionGallery extends StatelessWidget {
-  const _ActionGallery({
-    required this.photoUrls,
-    required this.isDesktop,
-  });
-
-  final List<String> photoUrls;
-  final bool isDesktop;
-
-  @override
-  Widget build(BuildContext context) {
-    final urls = photoUrls.take(6).toList();
-
-    return Container(
-      width: double.infinity,
-      color: const Color(0xFFF5F5F5),
-      padding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 48 : 20,
-        vertical: 48,
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                StringConst.actionGallery,
-                style: TextStyle(
-                  fontFamily: StringConst.fontFamily,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                StringConst.actionGallerySubtitle,
-                style: TextStyle(
-                  fontFamily: StringConst.fontFamily,
-                  fontSize: 14,
-                  color: Color(0xFF757575),
-                ),
-              ),
-              const SizedBox(height: 28),
-              if (isDesktop && urls.length >= 3)
-                _DesktopGalleryGrid(urls: urls)
-              else
-                _MobileGalleryGrid(urls: urls),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DesktopGalleryGrid extends StatelessWidget {
-  const _DesktopGalleryGrid({required this.urls});
-
-  final List<String> urls;
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = urls[0];
-    final rest = urls.skip(1).toList();
-
-    return SizedBox(
-      height: 420,
-      child: Row(
-        children: [
-          Expanded(
-            flex: 5,
-            child: _GalleryImage(url: primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 5,
-            child: Column(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _GalleryImage(
-                          url: rest.isNotEmpty ? rest[0] : primary,
-                        ),
-                      ),
-                      if (rest.length > 1) ...[
-                        const SizedBox(width: 12),
-                        Expanded(child: _GalleryImage(url: rest[1])),
-                      ],
-                    ],
-                  ),
-                ),
-                if (rest.length > 2) ...[
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: _GalleryImage(url: rest[2]),
-                  ),
-                ],
-                if (rest.length > 3) ...[
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(child: _GalleryImage(url: rest[3])),
-                        if (rest.length > 4) ...[
-                          const SizedBox(width: 12),
-                          Expanded(child: _GalleryImage(url: rest[4])),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MobileGalleryGrid extends StatelessWidget {
-  const _MobileGalleryGrid({required this.urls});
-
-  final List<String> urls;
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: urls.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemBuilder: (context, index) {
-        return _GalleryImage(url: urls[index]);
-      },
-    );
-  }
-}
-
-class _GalleryImage extends StatelessWidget {
-  const _GalleryImage({required this.url});
-
-  final String url;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: Image.network(
-        url,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, _, _) => Container(
-          color: const Color(0xFFE0E0E0),
-          alignment: Alignment.center,
-          child: const Icon(Icons.image_not_supported_outlined),
-        ),
       ),
     );
   }
