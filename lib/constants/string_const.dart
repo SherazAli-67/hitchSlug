@@ -1,6 +1,15 @@
 class StringConst {
   static const webAppTitle = 'Hitch: Racket Partners';
+  static const profileTitleSuffix = 'Hitch Racket Player';
   static const fontFamily = 'PlusJakartaSans';
+
+  static String profileWebTitle(String playerName) {
+    final name = playerName.trim();
+    if (name.isEmpty) {
+      return webAppTitle;
+    }
+    return '$name - $profileTitleSuffix';
+  }
 
   static const hitch = 'Hitch';
   static const downloadApp = 'Download App';

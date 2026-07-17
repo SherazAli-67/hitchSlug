@@ -89,28 +89,32 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
         }
 
         final user = snapshot.data!;
-        return PageShell(
-          onLogoTap: _goToLanding,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
-              return Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isDesktop ? 48 : 20,
-                  vertical: isDesktop ? 40 : 28,
-                ),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1100),
-                    child: _ProfileHero(
-                      user: user,
-                      slug: widget.slug,
-                      isDesktop: isDesktop,
+        return Title(
+          title: StringConst.profileWebTitle(user.userName),
+          color: AppColors.primaryColorVariant1,
+          child: PageShell(
+            onLogoTap: _goToLanding,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
+                return Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isDesktop ? 48 : 20,
+                    vertical: isDesktop ? 40 : 28,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1100),
+                      child: _ProfileHero(
+                        user: user,
+                        slug: widget.slug,
+                        isDesktop: isDesktop,
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         );
       },
