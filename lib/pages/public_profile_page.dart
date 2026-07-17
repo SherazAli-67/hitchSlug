@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../constants/string_const.dart';
 import '../core/app_colors.dart';
 import '../core/models/user_model.dart';
+import '../profile/open_in_app.dart';
 import '../profile/public_profile_api.dart';
 import '../widgets/page_shell.dart';
 
@@ -103,6 +104,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                     constraints: const BoxConstraints(maxWidth: 1100),
                     child: _ProfileHero(
                       user: user,
+                      slug: widget.slug,
                       isDesktop: isDesktop,
                     ),
                   ),
@@ -160,10 +162,12 @@ class _MessageState extends StatelessWidget {
 class _ProfileHero extends StatelessWidget {
   const _ProfileHero({
     required this.user,
+    required this.slug,
     required this.isDesktop,
   });
 
   final UserModel user;
+  final String slug;
   final bool isDesktop;
 
   @override
@@ -179,7 +183,7 @@ class _ProfileHero extends StatelessWidget {
           const SizedBox(width: 40),
           Expanded(
             flex: 55,
-            child: _ProfileDetails(user: user),
+            child: _ProfileDetails(user: user, slug: slug),
           ),
         ],
       );
@@ -190,7 +194,7 @@ class _ProfileHero extends StatelessWidget {
       children: [
         _PhotoCollage(user: user),
         const SizedBox(height: 28),
-        _ProfileDetails(user: user),
+        _ProfileDetails(user: user, slug: slug),
       ],
     );
   }
@@ -266,9 +270,13 @@ class _GridImage extends StatelessWidget {
 }
 
 class _ProfileDetails extends StatelessWidget {
-  const _ProfileDetails({required this.user});
+  const _ProfileDetails({
+    required this.user,
+    required this.slug,
+  });
 
   final UserModel user;
+  final String slug;
 
   @override
   Widget build(BuildContext context) {
@@ -277,6 +285,8 @@ class _ProfileDetails extends StatelessWidget {
     final dupr = user.primaryDuprRating;
     final levelTitle = user.primaryLevelTitle;
     final hitchCount = user.reactIds.length;
+    final profileSlug =
+        user.profileSlug.isNotEmpty ? user.profileSlug : slug;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -401,6 +411,28 @@ class _ProfileDetails extends StatelessWidget {
         if (user.bio.isNotEmpty) ...[
           const SizedBox(height: 24),
           _BioCard(bio: user.bio),
+        ],
+        if (profileSlug.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.headerFooterColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(99),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
+            ),
+            onPressed: () => openPlayerInApp(profileSlug),
+            child: const Text(
+              StringConst.letsPlayLabel,
+              style: TextStyle(
+                fontFamily: StringConst.fontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.blueGreenColor,
+              ),
+            ),
+          ),
         ],
       ],
     );

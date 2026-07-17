@@ -15,6 +15,9 @@ class StringConst {
   static const playStoreUrl =
       'https://play.google.com/store/apps/details?id=com.willparton.hitch';
 
+  static const appDeepLinkScheme = 'hitch';
+  static const letsPlayLabel = "Let's Play";
+
   static const followUs = 'Follow us';
   static const getInTouch = 'Get in touch:';
   static const contactEmail = 'will@hitchplayerfinders.com';

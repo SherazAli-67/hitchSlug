@@ -20,7 +20,21 @@ class PublicProfileApi {
 
   final http.Client _client;
 
+  /*
+  * {userID: 00Dog6EjA9fNVz4O5F0wJOaqh0A3, userName: Ehsan, profileSlug: ehsan, profilePicture: https://firebasestorage.googleapis.com/v0/b/hitches-mobile-app.appspot.com/o/profilePictures%2Fprivate%2Fvar%2Fmobile%2FContainers%2FData%2FApplication%2F6AA48ABF-C046-4365-B658-82142FF7374D%2Ftmp%2Fimage_picker_C1D5D0F3-177F-4204-A507-A050A3232391-2982-000000BAE4398BED.jpg?alt=media&token=44e15018-3bb5-46f9-a7a5-736da23e0229, playerTypePickle: true, playerTypeTennis: true, playerTypePadel: true, playerTypeCoach: false, coachFilter: true, level: , bio: , cellNumber: , emailAddress: ehsanmoosvi@gmail.com, age: 38, experience: , token: fLQe-gxVmkF3l65zR9qDsY:APA91bG362YFYhtLYiFGiEBIPmoL9OMCsbImz7QIT8vlUUL5f9vrRqLWff418e-1sRDJT24cjvuP8VNr5p_6EsQ1AnggHzZ85yK4W1sDxujvVGtj_TqAIGw, distanceFromCurrentLocation: 10.0, requestSentToUserIDs: [], hiddenIds: [], requestReceivedFromUserIDs: [9CVy8TFmyfZ0SAdSOpK1xECjUJf2], declinedRequestsUserIDs: [9CVy8TFmyfZ0SAdSOpK1xECjUJf2], reactIds: [], latitude: 43.54583139369229, lo
+  * */
   Future<UserModel> fetchBySlug(String slug) async {
+    /*return UserModel(userID: "00Dog6EjA9fNVz4O5F0wJOaqh0A3",
+        userName: 'Ehsan',
+        profilePicture: 'https://firebasestorage.googleapis.com/v0/b/hitches-mobile-app.appspot.com/o/profilePictures%2Fprivate%2Fvar%2Fmobile%2FContainers%2FData%2FApplication%2F6AA48ABF-C046-4365-B658-82142FF7374D%2Ftmp%2Fimage_picker_C1D5D0F3-177F-4204-A507-A050A3232391-2982-000000BAE4398BED.jpg?alt=media&token=44e15018-3bb5-46f9-a7a5-736da23e0229',
+        playerTypePickle: true,
+        playerTypeTennis: false,
+        playerTypePadel: false,
+        playerTypeCoach: false,
+        bio: "Pickle ball player",
+        cellNumber: "+923072215500",
+        emailAddress: "ehsan@gmail.com",
+        availableDaysToPlay: ['Monday', "Tuesday"]);*/
     final uri = Uri.parse(_baseUrl).replace(queryParameters: {'slug': slug});
     final response = await _client.get(uri);
 
