@@ -1,6 +1,6 @@
 {
-    "name": "hitch_profile_slug_deeplink",
-    "short_name": "hitch_profile_slug_deeplink",
+    "name": "Hitch: Racket Partners",
+    "short_name": "Hitch: Racket Partners",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
