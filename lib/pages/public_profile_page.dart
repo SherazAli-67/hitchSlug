@@ -6,6 +6,7 @@ import '../core/app_colors.dart';
 import '../core/models/user_model.dart';
 import '../profile/open_in_app.dart';
 import '../profile/public_profile_api.dart';
+import '../profile/seo_meta.dart';
 import '../widgets/page_shell.dart';
 
 class ProfileNotFoundPage extends StatelessWidget {
@@ -13,11 +14,16 @@ class ProfileNotFoundPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const PageShell(
-      centerBody: true,
-      child: _MessageState(
-        title: StringConst.playerNotFound,
-        subtitle: StringConst.playerNotFoundSubtitle,
+    applyDefaultSeo();
+    return Title(
+      title: StringConst.webAppTitle,
+      color: AppColors.primaryColorVariant1,
+      child: const PageShell(
+        centerBody: true,
+        child: _MessageState(
+          title: StringConst.playerNotFound,
+          subtitle: StringConst.playerNotFoundSubtitle,
+        ),
       ),
     );
   }
@@ -49,7 +55,19 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   @override
   void initState() {
     super.initState();
-    _future = _api.fetchBySlug(widget.slug);
+    applyDefaultSeo();
+    _future = _fetchProfile();
+  }
+
+  Future<UserModel> _fetchProfile() async {
+    try {
+      final user = await _api.fetchBySlug(widget.slug);
+      applyProfileSeo(user, pageUrl: Uri.base);
+      return user;
+    } catch (_) {
+      applyDefaultSeo();
+      rethrow;
+    }
   }
 
   Future<void> _goToLanding() async {
@@ -63,27 +81,35 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       future: _future,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return PageShell(
-            onLogoTap: _goToLanding,
-            centerBody: true,
-            child: const CircularProgressIndicator(
-              color: AppColors.primaryGreenColor,
+          return Title(
+            title: StringConst.webAppTitle,
+            color: AppColors.primaryColorVariant1,
+            child: PageShell(
+              onLogoTap: _goToLanding,
+              centerBody: true,
+              child: const CircularProgressIndicator(
+                color: AppColors.primaryGreenColor,
+              ),
             ),
           );
         }
 
         if (snapshot.hasError) {
           final isNotFound = snapshot.error is PublicProfileNotFoundException;
-          return PageShell(
-            onLogoTap: _goToLanding,
-            centerBody: true,
-            child: _MessageState(
-              title: isNotFound
-                  ? StringConst.playerNotFound
-                  : StringConst.somethingWentWrong,
-              subtitle: isNotFound
-                  ? StringConst.playerNotFoundSubtitle
-                  : StringConst.tryAgainLater,
+          return Title(
+            title: StringConst.webAppTitle,
+            color: AppColors.primaryColorVariant1,
+            child: PageShell(
+              onLogoTap: _goToLanding,
+              centerBody: true,
+              child: _MessageState(
+                title: isNotFound
+                    ? StringConst.playerNotFound
+                    : StringConst.somethingWentWrong,
+                subtitle: isNotFound
+                    ? StringConst.playerNotFoundSubtitle
+                    : StringConst.tryAgainLater,
+              ),
             ),
           );
         }
@@ -216,12 +242,16 @@ class _PhotoCollage extends StatelessWidget {
     final sportsList = sportsUrls.toList();
     final bottomLeft = sportsList.isNotEmpty ? sportsList[0] : '';
     final bottomRight = sportsList.length > 1 ? sportsList[1] : '';
+    final name = user.userName;
 
     return Column(
       children: [
         AspectRatio(
           aspectRatio: 16 / 10,
-          child: _GridImage(url: user.profilePicture),
+          child: _GridImage(
+            url: user.profilePicture,
+            semanticLabel: StringConst.profilePhotoAlt(name),
+          ),
         ),
         const SizedBox(height: 8),
         LayoutBuilder(
@@ -231,9 +261,19 @@ class _PhotoCollage extends StatelessWidget {
               height: side,
               child: Row(
                 children: [
-                  Expanded(child: _GridImage(url: bottomLeft)),
+                  Expanded(
+                    child: _GridImage(
+                      url: bottomLeft,
+                      semanticLabel: StringConst.sportsPhotoAlt(name),
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Expanded(child: _GridImage(url: bottomRight)),
+                  Expanded(
+                    child: _GridImage(
+                      url: bottomRight,
+                      semanticLabel: StringConst.sportsPhotoAlt(name),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -245,21 +285,34 @@ class _PhotoCollage extends StatelessWidget {
 }
 
 class _GridImage extends StatelessWidget {
-  const _GridImage({required this.url});
+  const _GridImage({
+    required this.url,
+    this.semanticLabel,
+  });
 
   final String url;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
+    final image = url.isEmpty
+        ? _placeholder()
+        : Image.network(
+            url,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            semanticLabel: semanticLabel,
+            errorBuilder: (_, _, _) => _placeholder(),
+          );
+
     return SizedBox.expand(
-      child: url.isEmpty
-          ? _placeholder()
-          : Image.network(
-              url,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (_, _, _) => _placeholder(),
+      child: semanticLabel == null || url.isEmpty
+          ? image
+          : Semantics(
+              image: true,
+              label: semanticLabel,
+              child: image,
             ),
     );
   }
@@ -309,14 +362,17 @@ class _ProfileDetails extends StatelessWidget {
           ),
           const SizedBox(height: 18),
         ],
-        Text(
-          user.userName.isNotEmpty ? user.userName : 'Player',
-          style: const TextStyle(
-            fontFamily: StringConst.fontFamily,
-            fontSize: 40,
-            fontWeight: FontWeight.w800,
-            height: 1.1,
-            color: Colors.black,
+        Semantics(
+          header: true,
+          child: Text(
+            user.userName.isNotEmpty ? user.userName : 'Player',
+            style: const TextStyle(
+              fontFamily: StringConst.fontFamily,
+              fontSize: 40,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
+              color: Colors.black,
+            ),
           ),
         ),
         if (location.isNotEmpty || gender.isNotEmpty) ...[

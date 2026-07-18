@@ -11,6 +11,33 @@ class StringConst {
     return '$name - $profileTitleSuffix';
   }
 
+  static String profileMetaDescription({
+    required String playerName,
+    List<String> sports = const [],
+    String location = '',
+  }) {
+    final name = playerName.trim().isEmpty ? 'Player' : playerName.trim();
+    final parts = <String>['$name on Hitch'];
+    if (sports.isNotEmpty) {
+      parts.add(sports.join(', '));
+    }
+    if (location.trim().isNotEmpty) {
+      parts.add(location.trim());
+    }
+    parts.add('Find racket sports partners.');
+    return parts.join('. ');
+  }
+
+  static String profilePhotoAlt(String playerName) {
+    final name = playerName.trim().isEmpty ? 'Player' : playerName.trim();
+    return '$name profile photo';
+  }
+
+  static String sportsPhotoAlt(String playerName) {
+    final name = playerName.trim().isEmpty ? 'Player' : playerName.trim();
+    return '$name sports photo';
+  }
+
   static const hitch = 'Hitch';
   static const downloadApp = 'Download App';
   static const socialBadge = '# Not a dating app.';

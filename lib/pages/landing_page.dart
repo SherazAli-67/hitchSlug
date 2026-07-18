@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../constants/string_const.dart';
 import '../core/app_colors.dart';
+import '../profile/seo_meta.dart';
 import '../widgets/page_shell.dart';
 
 class LandingPage extends StatelessWidget {
@@ -18,31 +19,36 @@ class LandingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PageShell(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
-          return Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isDesktop ? 48 : 20,
-              vertical: isDesktop ? 32 : 24,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1100),
-                child: isDesktop
-                    ? _DesktopHero(
-                        onAppStore: () => _openUrl(StringConst.appStoreUrl),
-                        onPlayStore: () => _openUrl(StringConst.playStoreUrl),
-                      )
-                    : _MobileHero(
-                        onAppStore: () => _openUrl(StringConst.appStoreUrl),
-                        onPlayStore: () => _openUrl(StringConst.playStoreUrl),
-                      ),
+    applyDefaultSeo();
+    return Title(
+      title: StringConst.webAppTitle,
+      color: AppColors.primaryColorVariant1,
+      child: PageShell(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
+            return Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? 48 : 20,
+                vertical: isDesktop ? 32 : 24,
               ),
-            ),
-          );
-        },
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1100),
+                  child: isDesktop
+                      ? _DesktopHero(
+                          onAppStore: () => _openUrl(StringConst.appStoreUrl),
+                          onPlayStore: () => _openUrl(StringConst.playStoreUrl),
+                        )
+                      : _MobileHero(
+                          onAppStore: () => _openUrl(StringConst.appStoreUrl),
+                          onPlayStore: () => _openUrl(StringConst.playStoreUrl),
+                        ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
