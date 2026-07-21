@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../constants/string_const.dart';
 import '../core/app_colors.dart';
 import '../profile/city_players_api.dart';
+import '../profile/open_in_app.dart';
 import '../profile/profile_slug.dart';
 import '../profile/seo_meta.dart';
 import '../widgets/page_shell.dart';
@@ -45,8 +46,17 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
     if (slug.isEmpty) {
       return;
     }
-    final profileUri = Uri.parse('${Uri.base.origin}/player/$slug');
+    final path = player.deepLinkPath(fallbackCitySlug: widget.citySlug);
+    final profileUri = Uri.parse('${Uri.base.origin}$path');
     await launchUrl(profileUri, webOnlyWindowName: '_self');
+  }
+
+  Future<void> _letsPlay(PublicCityPlayer player) async {
+    final slug = player.profileSlug.trim();
+    if (slug.isEmpty) {
+      return;
+    }
+    await openPlayerInApp(slug);
   }
 
   String get _fallbackCityName => citySlugToDisplayName(widget.citySlug);
@@ -87,68 +97,80 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
 
         final result = snapshot.data!;
         final displayCity = result.players
-                .map((p) => p.city.trim())
-                .firstWhere(
-                  (city) => city.isNotEmpty,
-                  orElse: () => _fallbackCityName,
-                );
+            .map((p) => p.city.trim())
+            .firstWhere(
+              (city) => city.isNotEmpty,
+              orElse: () => _fallbackCityName,
+            );
 
         return Title(
           title: StringConst.cityPlayersWebTitle(displayCity),
           color: AppColors.primaryColorVariant1,
           child: PageShell(
             onLogoTap: _goToLanding,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
-                return Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isDesktop ? 48 : 20,
-                    vertical: isDesktop ? 40 : 28,
-                  ),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1100),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${StringConst.playersInCityTitle} $displayCity',
-                            style: TextStyle(
-                              fontFamily: StringConst.fontFamily,
-                              fontSize: isDesktop ? 40 : 32,
-                              fontWeight: FontWeight.w800,
-                              height: 1.1,
-                              color: Colors.black,
+            child: SelectionArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
+                  return Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isDesktop ? 48 : 20,
+                      vertical: isDesktop ? 40 : 28,
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1100),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Semantics(
+                              headingLevel: 1,
+                              header: true,
+                              child: Text(
+                                '${StringConst.playersInCityTitle} $displayCity',
+                                style: TextStyle(
+                                  fontFamily: StringConst.fontFamily,
+                                  fontSize: isDesktop ? 40 : 32,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.1,
+                                  color: Colors.black,
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            StringConst.browsePlayersSubtitle,
-                            style: TextStyle(
-                              fontFamily: StringConst.fontFamily,
-                              fontSize: 15,
-                              color: Color(0xFF5A5A5A),
+                            const SizedBox(height: 8),
+                            Semantics(
+                              headingLevel: 5,
+                              header: true,
+                              child: Text(
+                                StringConst.connectWithPartnersIn(displayCity),
+                                style: const TextStyle(
+                                  fontFamily: StringConst.fontFamily,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryColorVariant1,
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 28),
-                          if (result.players.isEmpty)
-                            const _MessageState(
-                              title: StringConst.noPlayersInCity,
-                              subtitle: StringConst.noPlayersInCitySubtitle,
-                            )
-                          else
-                            _PlayerGrid(
-                              players: result.players,
-                              isDesktop: isDesktop,
-                              onTap: _openProfile,
-                            ),
-                        ],
+                            const SizedBox(height: 28),
+                            if (result.players.isEmpty)
+                              const _MessageState(
+                                title: StringConst.noPlayersInCity,
+                                subtitle: StringConst.noPlayersInCitySubtitle,
+                              )
+                            else
+                              _PlayerGrid(
+                                players: result.players,
+                                isDesktop: isDesktop,
+                                onCardTap: _openProfile,
+                                onLetsPlay: _letsPlay,
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         );
@@ -161,12 +183,14 @@ class _PlayerGrid extends StatelessWidget {
   const _PlayerGrid({
     required this.players,
     required this.isDesktop,
-    required this.onTap,
+    required this.onCardTap,
+    required this.onLetsPlay,
   });
 
   final List<PublicCityPlayer> players;
   final bool isDesktop;
-  final ValueChanged<PublicCityPlayer> onTap;
+  final ValueChanged<PublicCityPlayer> onCardTap;
+  final ValueChanged<PublicCityPlayer> onLetsPlay;
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +212,8 @@ class _PlayerGrid extends StatelessWidget {
                 width: itemWidth,
                 child: _PlayerCard(
                   player: player,
-                  onTap: () => onTap(player),
+                  onTap: () => onCardTap(player),
+                  onLetsPlay: () => onLetsPlay(player),
                 ),
               ),
           ],
@@ -198,168 +223,260 @@ class _PlayerGrid extends StatelessWidget {
   }
 }
 
-class _PlayerCard extends StatelessWidget {
+class _PlayerCard extends StatefulWidget {
   const _PlayerCard({
     required this.player,
     required this.onTap,
+    required this.onLetsPlay,
   });
 
   final PublicCityPlayer player;
   final VoidCallback onTap;
+  final VoidCallback onLetsPlay;
+
+  @override
+  State<_PlayerCard> createState() => _PlayerCardState();
+}
+
+class _PlayerCardState extends State<_PlayerCard> {
+  bool _hovered = false;
+  bool _focused = false;
+
+  bool get _active => _hovered || _focused;
+
+  String get _subtitle {
+    final player = widget.player;
+    final parts = <String>[];
+    if (player.primarySport.isNotEmpty) {
+      parts.add(player.primarySport);
+    }
+    final levelTitle = player.primaryLevelTitle;
+    final dupr = player.primaryDuprRating;
+    if (levelTitle.isNotEmpty) {
+      parts.add(levelTitle);
+    } else if (dupr != null) {
+      parts.add('DUPR ${dupr.toStringAsFixed(2)}');
+    }
+    return parts.join(' • ');
+  }
+
+  List<String> get _chips {
+    final player = widget.player;
+    final values = <String>[];
+    final playStyle = player.playStyle.trim();
+    if (playStyle.isNotEmpty) {
+      values.add(playStyle);
+    }
+    for (final sport in player.activeSports.skip(1)) {
+      values.add(sport);
+    }
+    return values;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final sports = player.activeSports;
-    final city = player.city.trim();
-    final rating = player.primaryDuprRating;
+    final player = widget.player;
+    final subtitle = _subtitle;
+    final chips = _chips;
 
-    return Material(
-      color: Colors.white,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE6E6E6)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(40),
-                  child: SizedBox(
-                    width: 72,
-                    height: 72,
-                    child: player.profilePicture.isEmpty
-                        ? Container(
-                            color: const Color(0xFFEEEEEE),
-                            alignment: Alignment.center,
-                            child: const Icon(
-                              Icons.person,
-                              size: 36,
-                              color: Color(0xFFBDBDBD),
-                            ),
-                          )
-                        : Image.network(
-                            player.profilePicture,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => Container(
-                              color: const Color(0xFFEEEEEE),
-                              alignment: Alignment.center,
-                              child: const Icon(
-                                Icons.person,
-                                size: 36,
-                                color: Color(0xFFBDBDBD),
-                              ),
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Material(
+        color: _active ? AppColors.backgroundColor : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: widget.onTap,
+          onFocusChange: (value) => setState(() => _focused = value),
+          borderRadius: BorderRadius.circular(16),
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _active
+                    ? AppColors.primaryColorVariant1
+                    : const Color(0xFFE6E6E6),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
                     children: [
-                      Text(
-                        player.userName.isNotEmpty ? player.userName : 'Player',
-                        style: const TextStyle(
-                          fontFamily: StringConst.fontFamily,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black,
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: AspectRatio(
+                          aspectRatio: 4 / 3,
+                          child: _CardImage(
+                            url: player.profilePicture,
+                            semanticLabel:
+                                StringConst.profilePhotoAlt(player.userName),
+                          ),
                         ),
                       ),
-                      if (city.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on_outlined,
-                              size: 14,
-                              color: Color(0xFF757575),
+                      if (player.playerTypeCoach)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
                             ),
-                            const SizedBox(width: 2),
-                            Flexible(
-                              child: Text(
-                                city,
-                                style: const TextStyle(
-                                  fontFamily: StringConst.fontFamily,
-                                  fontSize: 13,
-                                  color: Color(0xFF757575),
-                                ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryGreenColor,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              StringConst.playerTypeCoachValue,
+                              style: TextStyle(
+                                fontFamily: StringConst.fontFamily,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
                               ),
                             ),
-                          ],
-                        ),
-                      ],
-                      if (sports.isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: [
-                            for (var i = 0; i < sports.length; i++)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: i == 0
-                                      ? AppColors.primaryColorVariant1
-                                          .withValues(alpha: 0.15)
-                                      : const Color(0xFFF3F3F3),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  sports[i],
-                                  style: TextStyle(
-                                    fontFamily: StringConst.fontFamily,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: i == 0
-                                        ? AppColors.textPrimaryColor
-                                        : const Color(0xFF5A5A5A),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                      if (rating != null) ...[
-                        const SizedBox(height: 10),
-                        Text(
-                          'DUPR ${rating.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontFamily: StringConst.fontFamily,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primaryGreenColor,
                           ),
                         ),
-                      ] else if (player.level.isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        Text(
-                          player.level,
-                          style: const TextStyle(
-                            fontFamily: StringConst.fontFamily,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF5A5A5A),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(6, 12, 6, 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          player.userName.isNotEmpty
+                              ? player.userName
+                              : 'Player',
+                          style: const TextStyle(
+                            fontFamily: StringConst.fontFamily,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.black,
+                          ),
+                        ),
+                        if (subtitle.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontFamily: StringConst.fontFamily,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: _active
+                                  ? AppColors.textPrimaryColor
+                                  : const Color(0xFF757575),
+                            ),
+                          ),
+                        ],
+                        if (chips.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              for (final chip in chips)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _active
+                                        ? Colors.white
+                                        : const Color(0xFFF3F3F3),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    chip,
+                                    style: const TextStyle(
+                                      fontFamily: StringConst.fontFamily,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF5A5A5A),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                        if (_active) ...[
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton(
+                              onPressed: widget.onLetsPlay,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primaryGreenColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                StringConst.letsPlayLabel,
+                                style: TextStyle(
+                                  fontFamily: StringConst.fontFamily,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CardImage extends StatelessWidget {
+  const _CardImage({
+    required this.url,
+    this.semanticLabel,
+  });
+
+  final String url;
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    if (url.isEmpty) {
+      return _placeholder();
+    }
+    return Semantics(
+      image: true,
+      label: semanticLabel,
+      child: Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        semanticLabel: semanticLabel,
+        errorBuilder: (_, _, _) => _placeholder(),
+      ),
+    );
+  }
+
+  Widget _placeholder() {
+    return Container(
+      color: const Color(0xFFEEEEEE),
+      alignment: Alignment.center,
+      child: const Icon(Icons.person, size: 48, color: Color(0xFFBDBDBD)),
     );
   }
 }

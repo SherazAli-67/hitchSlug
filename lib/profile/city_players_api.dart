@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../constants/string_const.dart';
+import '../core/models/player_level_model.dart';
 
 class CityPlayersApiException implements Exception {
   CityPlayersApiException(this.message);
@@ -21,9 +22,14 @@ class PublicCityPlayer {
     required this.playerTypeTennis,
     required this.playerTypePadel,
     required this.playerTypeCoach,
+    this.cityLowerCase = '',
     this.level = '',
+    this.playStyle = '',
     this.duprSingleRating,
     this.duprDoubleRating,
+    this.pickleBallPlayerLevel,
+    this.tennisBallPlayerLevel,
+    this.padelBallPlayerLevel,
   });
 
   final String userID;
@@ -31,13 +37,18 @@ class PublicCityPlayer {
   final String profileSlug;
   final String profilePicture;
   final String city;
+  final String cityLowerCase;
   final bool playerTypePickle;
   final bool playerTypeTennis;
   final bool playerTypePadel;
   final bool playerTypeCoach;
   final String level;
+  final String playStyle;
   final double? duprSingleRating;
   final double? duprDoubleRating;
+  final PlayerLevelModel? pickleBallPlayerLevel;
+  final PlayerLevelModel? tennisBallPlayerLevel;
+  final PlayerLevelModel? padelBallPlayerLevel;
 
   factory PublicCityPlayer.fromJson(Map<String, dynamic> json) {
     return PublicCityPlayer(
@@ -46,14 +57,26 @@ class PublicCityPlayer {
       profileSlug: (json['profileSlug'] as String?) ?? '',
       profilePicture: (json['profilePicture'] as String?) ?? '',
       city: (json['city'] as String?) ?? '',
+      cityLowerCase: (json['cityLowerCase'] as String?) ?? '',
       playerTypePickle: json['playerTypePickle'] == true,
       playerTypeTennis: json['playerTypeTennis'] == true,
       playerTypePadel: json['playerTypePadel'] == true,
       playerTypeCoach: json['playerTypeCoach'] == true,
       level: (json['level'] as String?) ?? '',
+      playStyle: (json['playStyle'] as String?) ?? '',
       duprSingleRating: (json['duprSingleRating'] as num?)?.toDouble(),
       duprDoubleRating: (json['duprDoubleRating'] as num?)?.toDouble(),
+      pickleBallPlayerLevel: _levelFrom(json['pickleBallPlayerLevel']),
+      tennisBallPlayerLevel: _levelFrom(json['tennisBallPlayerLevel']),
+      padelBallPlayerLevel: _levelFrom(json['padelBallPlayerLevel']),
     );
+  }
+
+  static PlayerLevelModel? _levelFrom(dynamic value) {
+    if (value is Map) {
+      return PlayerLevelModel.fromMap(Map<String, dynamic>.from(value));
+    }
+    return null;
   }
 
   List<String> get activeSports {
@@ -65,10 +88,62 @@ class PublicCityPlayer {
     return values;
   }
 
+  String get primarySport => activeSports.isEmpty ? '' : activeSports.first;
+
   double? get primaryDuprRating {
     if (duprDoubleRating != null) return duprDoubleRating;
     return duprSingleRating;
   }
+
+  PlayerLevelModel? get _primaryLevel {
+    if (playerTypePickle) return pickleBallPlayerLevel;
+    if (playerTypeTennis) return tennisBallPlayerLevel;
+    if (playerTypePadel) return padelBallPlayerLevel;
+    return pickleBallPlayerLevel ??
+        tennisBallPlayerLevel ??
+        padelBallPlayerLevel;
+  }
+
+  String get primaryLevelTitle {
+    final title = _primaryLevel?.levelTitle.trim() ?? '';
+    if (title.isNotEmpty) return title;
+    return level.trim();
+  }
+
+  String get _sportPrefix {
+    if (playerTypePickle) return 'pickleball-partners';
+    if (playerTypeTennis) return 'tennis-partners';
+    if (playerTypePadel) return 'padel-partners';
+    return 'pickleball-partners';
+  }
+
+  String deepLinkPath({required String fallbackCitySlug}) {
+    final slug = profileSlug.trim().toLowerCase();
+    final rawCity = cityLowerCase.isNotEmpty
+        ? cityLowerCase
+        : (city.isNotEmpty ? city : fallbackCitySlug);
+    final citySegment = _slugify(rawCity);
+    final levelSegment = _slugify(primaryLevelTitle);
+
+    final segments = <String>[
+      _sportPrefix,
+      'player',
+      if (citySegment.isNotEmpty) citySegment,
+      if (levelSegment.isNotEmpty) levelSegment,
+      slug,
+    ];
+    return '/${segments.join('/')}';
+  }
+}
+
+String _slugify(String input) {
+  return input
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'\s+'), '-')
+      .replaceAll(RegExp(r'[^a-z0-9.+-]'), '')
+      .replaceAll(RegExp(r'-{2,}'), '-')
+      .replaceAll(RegExp(r'(^-+)|(-+$)'), '');
 }
 
 class CityPlayersResult {

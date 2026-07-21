@@ -97,8 +97,14 @@ class StringConst {
   static const noPlayersInCity = 'No players found';
   static const noPlayersInCitySubtitle =
       'Check back soon as more Hitch players join this city.';
-  static const browsePlayersSubtitle =
-      'Connect with racket sport partners near you.';
+
+  static String connectWithPartnersIn(String cityName) {
+    final city = cityName.trim();
+    if (city.isEmpty) {
+      return 'Connect with racket partners near you';
+    }
+    return 'Connect with racket partners in $city';
+  }
 
   static String cityPlayersWebTitle(String cityName) {
     final city = cityName.trim();
