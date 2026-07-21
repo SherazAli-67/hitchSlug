@@ -13,17 +13,12 @@ Future<void> openPlayerInApp(String slug) async {
     return;
   }
 
-  final uri = buildAppDeepLinkUri(slug);
-  await launchUrl(uri, mode: LaunchMode.externalApplication);
-
   if (!_isIOS) {
+    await launchUrl(Uri.parse(StringConst.appStoreUrl));
     return;
   }
 
-  final wasVisible = html.document.visibilityState == 'visible';
-  if (!wasVisible) {
-    return;
-  }
+  html.window.location.href = buildAppDeepLinkUri(slug).toString();
 
   await Future<void>.delayed(const Duration(milliseconds: 2000));
 
@@ -31,10 +26,7 @@ Future<void> openPlayerInApp(String slug) async {
     return;
   }
 
-  await launchUrl(
-    Uri.parse(StringConst.appStoreUrl),
-    mode: LaunchMode.externalApplication,
-  );
+  html.window.location.href = StringConst.appStoreUrl;
 }
 
 String _buildAndroidIntentUri(String slug) {
