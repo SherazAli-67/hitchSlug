@@ -93,6 +93,20 @@ class StringConst {
       'This profile link may be invalid or outdated.';
   static const somethingWentWrong = 'Something went wrong';
   static const tryAgainLater = 'Please try again later.';
+  static const playersInCityTitle = 'Players in';
+  static const noPlayersInCity = 'No players found';
+  static const noPlayersInCitySubtitle =
+      'Check back soon as more Hitch players join this city.';
+  static const browsePlayersSubtitle =
+      'Connect with racket sport partners near you.';
+
+  static String cityPlayersWebTitle(String cityName) {
+    final city = cityName.trim();
+    if (city.isEmpty) {
+      return webAppTitle;
+    }
+    return 'Players in $city | Hitch';
+  }
   static const privacyPolicy = 'Privacy Policy';
   static const termsOfService = 'Terms of Service';
   static const safetyCenter = 'Safety Center';

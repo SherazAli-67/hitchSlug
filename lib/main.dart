@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'constants/string_const.dart';
 import 'core/app_colors.dart';
+import 'pages/city_players_page.dart';
 import 'pages/landing_page.dart';
 import 'pages/public_profile_page.dart';
 import 'profile/profile_slug.dart';
@@ -18,11 +19,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final resolvedUri = uri ?? Uri.base;
+    final citySlug = extractCitySlug(resolvedUri);
     final slug = extractProfileSlug(resolvedUri);
 
     final Widget home;
     if (isLandingPath(resolvedUri)) {
       home = const LandingPage();
+    } else if (citySlug != null) {
+      home = CityPlayersPage(citySlug: citySlug);
     } else if (slug != null) {
       home = PublicProfilePage(slug: slug);
     } else {

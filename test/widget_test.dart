@@ -29,6 +29,31 @@ void main() {
     );
   });
 
+  test('extractCitySlug reads city from /players path', () {
+    expect(
+      extractCitySlug(
+        Uri.parse('https://hitchplayerfinders.com/players/toronto'),
+      ),
+      'toronto',
+    );
+    expect(
+      extractCitySlug(
+        Uri.parse('https://hitchplayerfinders.com/players/new-york'),
+      ),
+      'new-york',
+    );
+    expect(
+      extractCitySlug(
+        Uri.parse('https://hitchplayerfinders.com/player/toronto'),
+      ),
+      isNull,
+    );
+    expect(
+      citySlugToDisplayName('new-york'),
+      'New York',
+    );
+  });
+
   testWidgets('landing page renders for root path', (WidgetTester tester) async {
     await tester.pumpWidget(
       MyApp(uri: Uri.parse('https://links.hitchplayerfinder.com/')),
