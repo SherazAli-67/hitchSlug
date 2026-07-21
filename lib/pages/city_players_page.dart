@@ -210,10 +210,13 @@ class _PlayerGrid extends StatelessWidget {
             for (final player in players)
               SizedBox(
                 width: itemWidth,
-                child: _PlayerCard(
-                  player: player,
-                  onTap: () => onCardTap(player),
-                  onLetsPlay: () => onLetsPlay(player),
+                child: RepaintBoundary(
+                  child: _PlayerCard(
+                    player: player,
+                    imageWidth: itemWidth,
+                    onTap: () => onCardTap(player),
+                    onLetsPlay: () => onLetsPlay(player),
+                  ),
                 ),
               ),
           ],
@@ -226,11 +229,13 @@ class _PlayerGrid extends StatelessWidget {
 class _PlayerCard extends StatefulWidget {
   const _PlayerCard({
     required this.player,
+    required this.imageWidth,
     required this.onTap,
     required this.onLetsPlay,
   });
 
   final PublicCityPlayer player;
+  final double imageWidth;
   final VoidCallback onTap;
   final VoidCallback onLetsPlay;
 
@@ -283,15 +288,16 @@ class _PlayerCardState extends State<_PlayerCard> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: Material(
-        color: _active ? AppColors.backgroundColor : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        clipBehavior: Clip.antiAlias,
+        type: MaterialType.transparency,
         child: InkWell(
           onTap: widget.onTap,
           onFocusChange: (value) => setState(() => _focused = value),
           borderRadius: BorderRadius.circular(16),
-          child: Ink(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
             decoration: BoxDecoration(
+              color: _active ? AppColors.backgroundColor : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _active
@@ -312,6 +318,7 @@ class _PlayerCardState extends State<_PlayerCard> {
                           aspectRatio: 4 / 3,
                           child: _CardImage(
                             url: player.profilePicture,
+                            displayWidth: widget.imageWidth,
                             semanticLabel:
                                 StringConst.profilePhotoAlt(player.userName),
                           ),
@@ -404,33 +411,39 @@ class _PlayerCardState extends State<_PlayerCard> {
                             ],
                           ),
                         ],
-                        if (_active) ...[
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton(
-                              onPressed: widget.onLetsPlay,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.primaryGreenColor,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
+                        const SizedBox(height: 14),
+                        IgnorePointer(
+                          ignoring: !_active,
+                          child: AnimatedOpacity(
+                            opacity: _active ? 1 : 0,
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOut,
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: FilledButton(
+                                onPressed: widget.onLetsPlay,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.primaryGreenColor,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                StringConst.letsPlayLabel,
-                                style: TextStyle(
-                                  fontFamily: StringConst.fontFamily,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
+                                child: const Text(
+                                  StringConst.letsPlayLabel,
+                                  style: TextStyle(
+                                    fontFamily: StringConst.fontFamily,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
@@ -447,10 +460,12 @@ class _PlayerCardState extends State<_PlayerCard> {
 class _CardImage extends StatelessWidget {
   const _CardImage({
     required this.url,
+    required this.displayWidth,
     this.semanticLabel,
   });
 
   final String url;
+  final double displayWidth;
   final String? semanticLabel;
 
   @override
@@ -458,6 +473,8 @@ class _CardImage extends StatelessWidget {
     if (url.isEmpty) {
       return _placeholder();
     }
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheWidth = (displayWidth * dpr).round();
     return Semantics(
       image: true,
       label: semanticLabel,
@@ -466,6 +483,9 @@ class _CardImage extends StatelessWidget {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
+        cacheWidth: cacheWidth > 0 ? cacheWidth : null,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.low,
         semanticLabel: semanticLabel,
         errorBuilder: (_, _, _) => _placeholder(),
       ),
