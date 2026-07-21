@@ -214,6 +214,7 @@ class _PlayerGrid extends StatelessWidget {
                   child: _PlayerCard(
                     player: player,
                     imageWidth: itemWidth,
+                    alwaysShowLetsPlay: !isDesktop,
                     onTap: () => onCardTap(player),
                     onLetsPlay: () => onLetsPlay(player),
                   ),
@@ -230,12 +231,14 @@ class _PlayerCard extends StatefulWidget {
   const _PlayerCard({
     required this.player,
     required this.imageWidth,
+    required this.alwaysShowLetsPlay,
     required this.onTap,
     required this.onLetsPlay,
   });
 
   final PublicCityPlayer player;
   final double imageWidth;
+  final bool alwaysShowLetsPlay;
   final VoidCallback onTap;
   final VoidCallback onLetsPlay;
 
@@ -248,6 +251,8 @@ class _PlayerCardState extends State<_PlayerCard> {
   bool _focused = false;
 
   bool get _active => _hovered || _focused;
+
+  bool get _showLetsPlay => widget.alwaysShowLetsPlay || _active;
 
   String get _subtitle {
     final player = widget.player;
@@ -413,9 +418,9 @@ class _PlayerCardState extends State<_PlayerCard> {
                         ],
                         const SizedBox(height: 14),
                         IgnorePointer(
-                          ignoring: !_active,
+                          ignoring: !_showLetsPlay,
                           child: AnimatedOpacity(
-                            opacity: _active ? 1 : 0,
+                            opacity: _showLetsPlay ? 1 : 0,
                             duration: const Duration(milliseconds: 180),
                             curve: Curves.easeOut,
                             child: SizedBox(
