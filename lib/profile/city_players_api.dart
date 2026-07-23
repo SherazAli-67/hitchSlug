@@ -150,9 +150,21 @@ class CityPlayersResult {
   const CityPlayersResult({
     required this.city,
     required this.players,
+    this.displayCity = '',
+    this.radiusMiles,
+    this.offset = 0,
+    this.limit = CityPlayersApi.defaultPageSize,
+    this.total,
+    this.hasMore = false,
   });
 
   final String city;
+  final String displayCity;
+  final double? radiusMiles;
+  final int offset;
+  final int limit;
+  final int? total;
+  final bool hasMore;
   final List<PublicCityPlayer> players;
 }
 
@@ -162,11 +174,29 @@ class CityPlayersApi {
   static const String _baseUrl =
       'https://us-central1-hitches-mobile-app.cloudfunctions.net/getPublicPlayersByCity';
 
+  static const double defaultRadiusMiles = 20;
+  static const int defaultPageSize = 50;
+
   final http.Client _client;
 
-  Future<CityPlayersResult> fetchByCity(String citySlug) async {
+  Future<CityPlayersResult> fetchByCity(
+    String citySlug, {
+    double radiusMiles = defaultRadiusMiles,
+    int limit = defaultPageSize,
+    int offset = 0,
+  }) async {
+    final clampedRadius = radiusMiles.clamp(1, 20).toDouble();
+    final clampedLimit = limit.clamp(1, 100);
+    final safeOffset = offset < 0 ? 0 : offset;
     final uri = Uri.parse(_baseUrl).replace(
-      queryParameters: {'city': citySlug},
+      queryParameters: {
+        'city': citySlug,
+        'radius': clampedRadius.toStringAsFixed(
+          clampedRadius == clampedRadius.roundToDouble() ? 0 : 1,
+        ),
+        'limit': '$clampedLimit',
+        'offset': '$safeOffset',
+      },
     );
     final response = await _client.get(uri);
 
@@ -195,8 +225,21 @@ class CityPlayersApi {
         )
         .toList();
 
+    final responseOffset = (decoded['offset'] as num?)?.toInt() ?? safeOffset;
+    final responseLimit = (decoded['limit'] as num?)?.toInt() ?? clampedLimit;
+    final total = (decoded['total'] as num?)?.toInt();
+    final hasMore = decoded['hasMore'] == true ||
+        (total != null && responseOffset + players.length < total) ||
+        (decoded['hasMore'] == null && players.length >= responseLimit);
+
     return CityPlayersResult(
       city: (decoded['city'] as String?) ?? citySlug,
+      displayCity: (decoded['displayCity'] as String?) ?? '',
+      radiusMiles: (decoded['radiusMiles'] as num?)?.toDouble(),
+      offset: responseOffset,
+      limit: responseLimit,
+      total: total,
+      hasMore: hasMore,
       players: players,
     );
   }

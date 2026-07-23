@@ -97,6 +97,7 @@ class StringConst {
   static const noPlayersInCity = 'No players found';
   static const noPlayersInCitySubtitle =
       'Check back soon as more Hitch players join this city.';
+  static const loadMorePlayers = 'Load more';
 
   static String connectWithPartnersIn(String cityName) {
     final city = cityName.trim();

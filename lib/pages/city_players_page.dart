@@ -25,15 +25,105 @@ class CityPlayersPage extends StatefulWidget {
 
 class _CityPlayersPageState extends State<CityPlayersPage> {
   late final CityPlayersApi _api = widget._api ?? CityPlayersApi();
-  late Future<CityPlayersResult> _future;
 
   static const double _desktopBreakpoint = 900;
+
+  bool _initialLoading = true;
+  bool _loadingMore = false;
+  Object? _error;
+  final List<PublicCityPlayer> _players = [];
+  String _displayCity = '';
+  bool _hasMore = false;
+  final Set<String> _seenIds = {};
 
   @override
   void initState() {
     super.initState();
     applyDefaultSeo();
-    _future = _api.fetchByCity(widget.citySlug);
+    _displayCity = citySlugToDisplayName(widget.citySlug);
+    _loadInitial();
+  }
+
+  Future<void> _loadInitial() async {
+    setState(() {
+      _initialLoading = true;
+      _error = null;
+      _players.clear();
+      _seenIds.clear();
+      _hasMore = false;
+    });
+
+    try {
+      final result = await _api.fetchByCity(
+        widget.citySlug,
+        radiusMiles: CityPlayersApi.defaultRadiusMiles,
+        limit: CityPlayersApi.defaultPageSize,
+        offset: 0,
+      );
+      if (!mounted) return;
+      _appendPlayers(result.players);
+      setState(() {
+        _displayCity = _resolveDisplayCity(result);
+        _hasMore = result.hasMore;
+        _initialLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error;
+        _initialLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+
+    setState(() => _loadingMore = true);
+    try {
+      final result = await _api.fetchByCity(
+        widget.citySlug,
+        radiusMiles: CityPlayersApi.defaultRadiusMiles,
+        limit: CityPlayersApi.defaultPageSize,
+        offset: _players.length,
+      );
+      if (!mounted) return;
+      final beforeCount = _players.length;
+      _appendPlayers(result.players);
+      final added = _players.length - beforeCount;
+      setState(() {
+        if (result.displayCity.trim().isNotEmpty) {
+          _displayCity = result.displayCity.trim();
+        }
+        _hasMore = result.hasMore && added > 0;
+        _loadingMore = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingMore = false);
+    }
+  }
+
+  void _appendPlayers(List<PublicCityPlayer> next) {
+    for (final player in next) {
+      final id = player.userID.trim().isNotEmpty
+          ? player.userID.trim()
+          : player.profileSlug.trim();
+      if (id.isEmpty || _seenIds.contains(id)) continue;
+      _seenIds.add(id);
+      _players.add(player);
+    }
+  }
+
+  String _resolveDisplayCity(CityPlayersResult result) {
+    final fromApi = result.displayCity.trim();
+    if (fromApi.isNotEmpty) return fromApi;
+    return result.players
+        .map((p) => p.city.trim())
+        .firstWhere(
+          (city) => city.isNotEmpty,
+          orElse: () => citySlugToDisplayName(widget.citySlug),
+        );
   }
 
   Future<void> _goToLanding() async {
@@ -59,122 +149,150 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
     await openPlayerInApp(slug);
   }
 
-  String get _fallbackCityName => citySlugToDisplayName(widget.citySlug);
-
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<CityPlayersResult>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return Title(
-            title: StringConst.cityPlayersWebTitle(_fallbackCityName),
-            color: AppColors.primaryColorVariant1,
-            child: PageShell(
-              onLogoTap: _goToLanding,
-              centerBody: true,
-              child: const CircularProgressIndicator(
-                color: AppColors.primaryGreenColor,
-              ),
-            ),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return Title(
-            title: StringConst.cityPlayersWebTitle(_fallbackCityName),
-            color: AppColors.primaryColorVariant1,
-            child: PageShell(
-              onLogoTap: _goToLanding,
-              centerBody: true,
-              child: const _MessageState(
-                title: StringConst.somethingWentWrong,
-                subtitle: StringConst.tryAgainLater,
-              ),
-            ),
-          );
-        }
-
-        final result = snapshot.data!;
-        final displayCity = result.players
-            .map((p) => p.city.trim())
-            .firstWhere(
-              (city) => city.isNotEmpty,
-              orElse: () => _fallbackCityName,
-            );
-
-        return Title(
-          title: StringConst.cityPlayersWebTitle(displayCity),
-          color: AppColors.primaryColorVariant1,
-          child: PageShell(
-            onLogoTap: _goToLanding,
-            child: SelectionArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
-                  return Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isDesktop ? 48 : 20,
-                      vertical: isDesktop ? 40 : 28,
-                    ),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1100),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Semantics(
-                              headingLevel: 1,
-                              header: true,
-                              child: Text(
-                                '${StringConst.playersInCityTitle} $displayCity',
-                                style: TextStyle(
-                                  fontFamily: StringConst.fontFamily,
-                                  fontSize: isDesktop ? 40 : 32,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.1,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Semantics(
-                              headingLevel: 5,
-                              header: true,
-                              child: Text(
-                                StringConst.connectWithPartnersIn(displayCity),
-                                style: const TextStyle(
-                                  fontFamily: StringConst.fontFamily,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primaryColorVariant1,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 28),
-                            if (result.players.isEmpty)
-                              const _MessageState(
-                                title: StringConst.noPlayersInCity,
-                                subtitle: StringConst.noPlayersInCitySubtitle,
-                              )
-                            else
-                              _PlayerGrid(
-                                players: result.players,
-                                isDesktop: isDesktop,
-                                onCardTap: _openProfile,
-                                onLetsPlay: _letsPlay,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+    if (_initialLoading) {
+      return Title(
+        title: StringConst.cityPlayersWebTitle(_displayCity),
+        color: AppColors.primaryColorVariant1,
+        child: PageShell(
+          onLogoTap: _goToLanding,
+          centerBody: true,
+          child: const CircularProgressIndicator(
+            color: AppColors.primaryGreenColor,
           ),
-        );
-      },
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Title(
+        title: StringConst.cityPlayersWebTitle(_displayCity),
+        color: AppColors.primaryColorVariant1,
+        child: PageShell(
+          onLogoTap: _goToLanding,
+          centerBody: true,
+          child: const _MessageState(
+            title: StringConst.somethingWentWrong,
+            subtitle: StringConst.tryAgainLater,
+          ),
+        ),
+      );
+    }
+
+    return Title(
+      title: StringConst.cityPlayersWebTitle(_displayCity),
+      color: AppColors.primaryColorVariant1,
+      child: PageShell(
+        onLogoTap: _goToLanding,
+        child: SelectionArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
+              return Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isDesktop ? 48 : 20,
+                  vertical: isDesktop ? 40 : 28,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1100),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Semantics(
+                          headingLevel: 1,
+                          header: true,
+                          child: Text(
+                            '${StringConst.playersInCityTitle} $_displayCity',
+                            style: TextStyle(
+                              fontFamily: StringConst.fontFamily,
+                              fontSize: isDesktop ? 40 : 32,
+                              fontWeight: FontWeight.w800,
+                              height: 1.1,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Semantics(
+                          headingLevel: 5,
+                          header: true,
+                          child: Text(
+                            StringConst.connectWithPartnersIn(_displayCity),
+                            style: const TextStyle(
+                              fontFamily: StringConst.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primaryColorVariant1,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        if (_players.isEmpty)
+                          const _MessageState(
+                            title: StringConst.noPlayersInCity,
+                            subtitle: StringConst.noPlayersInCitySubtitle,
+                          )
+                        else ...[
+                          _PlayerGrid(
+                            players: _players,
+                            isDesktop: isDesktop,
+                            onCardTap: _openProfile,
+                            onLetsPlay: _letsPlay,
+                          ),
+                          if (_hasMore) ...[
+                            const SizedBox(height: 28),
+                            Center(
+                              child: SizedBox(
+                                width: isDesktop ? 220 : double.infinity,
+                                child: FilledButton(
+                                  onPressed: _loadingMore ? null : _loadMore,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor:
+                                        AppColors.primaryGreenColor,
+                                    foregroundColor: Colors.white,
+                                    disabledBackgroundColor:
+                                        AppColors.primaryGreenColor
+                                            .withValues(alpha: 0.6),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: _loadingMore
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Text(
+                                          StringConst.loadMorePlayers,
+                                          style: TextStyle(
+                                            fontFamily: StringConst.fontFamily,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 }
