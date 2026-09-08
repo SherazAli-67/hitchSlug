@@ -54,6 +54,29 @@ void main() {
     );
   });
 
+  test('isCityPlayersEmbed requires /players/{city} and embed=1', () {
+    expect(
+      isCityPlayersEmbed(
+        Uri.parse('https://hitchplayerfinders.com/players/toronto/?embed=1'),
+      ),
+      isTrue,
+    );
+    expect(
+      isCityPlayersEmbed(
+        Uri.parse('https://hitchplayerfinders.com/players/toronto/'),
+      ),
+      isFalse,
+    );
+    expect(
+      isCityPlayersEmbed(
+        Uri.parse(
+          'https://hitchplayerfinders.com/pickleball-partners/toronto/?embed=1',
+        ),
+      ),
+      isFalse,
+    );
+  });
+
   testWidgets('landing page renders for root path', (WidgetTester tester) async {
     await tester.pumpWidget(
       MyApp(uri: Uri.parse('https://links.hitchplayerfinder.com/')),

@@ -34,6 +34,10 @@ String? extractCitySlug(Uri uri) {
   return citySlug;
 }
 
+bool isCityPlayersEmbed(Uri uri) {
+  return extractCitySlug(uri) != null && uri.queryParameters['embed'] == '1';
+}
+
 String citySlugToDisplayName(String citySlug) {
   return citySlug
       .split('-')

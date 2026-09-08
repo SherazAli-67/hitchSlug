@@ -26,7 +26,10 @@ class MyApp extends StatelessWidget {
     if (isLandingPath(resolvedUri)) {
       home = const LandingPage();
     } else if (citySlug != null) {
-      home = CityPlayersPage(citySlug: citySlug);
+      home = CityPlayersPage(
+        citySlug: citySlug,
+        embed: isCityPlayersEmbed(resolvedUri),
+      );
     } else if (slug != null) {
       home = PublicProfilePage(slug: slug);
     } else {

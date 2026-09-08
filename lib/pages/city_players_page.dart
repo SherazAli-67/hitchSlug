@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../constants/string_const.dart';
 import '../core/app_colors.dart';
 import '../profile/city_players_api.dart';
+import '../profile/embed_height.dart';
 import '../profile/open_in_app.dart';
 import '../profile/profile_slug.dart';
 import '../profile/seo_meta.dart';
@@ -13,10 +14,12 @@ class CityPlayersPage extends StatefulWidget {
   const CityPlayersPage({
     super.key,
     required this.citySlug,
+    this.embed = false,
     CityPlayersApi? api,
   }) : _api = api;
 
   final String citySlug;
+  final bool embed;
   final CityPlayersApi? _api;
 
   @override
@@ -39,7 +42,9 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
   @override
   void initState() {
     super.initState();
-    applyDefaultSeo();
+    if (!widget.embed) {
+      applyDefaultSeo();
+    }
     _displayCity = citySlugToDisplayName(widget.citySlug);
     _loadInitial();
   }
@@ -67,12 +72,14 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
         _hasMore = result.hasMore;
         _initialLoading = false;
       });
+      _scheduleEmbedHeight();
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _error = error;
         _initialLoading = false;
       });
+      _scheduleEmbedHeight();
     }
   }
 
@@ -98,10 +105,26 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
         _hasMore = result.hasMore && added > 0;
         _loadingMore = false;
       });
+      _scheduleEmbedHeight();
     } catch (_) {
       if (!mounted) return;
       setState(() => _loadingMore = false);
     }
+  }
+
+  void _scheduleEmbedHeight() {
+    if (!widget.embed) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final isDesktop =
+          MediaQuery.sizeOf(context).width >= _desktopBreakpoint;
+      notifyCityPlayersEmbedHeight(
+        playerCount: _players.isEmpty ? 1 : _players.length,
+        isDesktop: isDesktop,
+        hasMore: _hasMore,
+        compactState: _initialLoading || _error != null || _players.isEmpty,
+      );
+    });
   }
 
   void _appendPlayers(List<PublicCityPlayer> next) {
@@ -138,7 +161,10 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
     }
     final path = player.deepLinkPath(fallbackCitySlug: widget.citySlug);
     final profileUri = Uri.parse('${Uri.base.origin}$path');
-    await launchUrl(profileUri, webOnlyWindowName: '_self');
+    await launchUrl(
+      profileUri,
+      webOnlyWindowName: widget.embed ? '_top' : '_self',
+    );
   }
 
   Future<void> _letsPlay(PublicCityPlayer player) async {
@@ -158,6 +184,8 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
         child: PageShell(
           onLogoTap: _goToLanding,
           centerBody: true,
+          showHeader: !widget.embed,
+          showFooter: !widget.embed,
           child: const CircularProgressIndicator(
             color: AppColors.primaryGreenColor,
           ),
@@ -172,6 +200,8 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
         child: PageShell(
           onLogoTap: _goToLanding,
           centerBody: true,
+          showHeader: !widget.embed,
+          showFooter: !widget.embed,
           child: const _MessageState(
             title: StringConst.somethingWentWrong,
             subtitle: StringConst.tryAgainLater,
@@ -185,6 +215,8 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
       color: AppColors.primaryColorVariant1,
       child: PageShell(
         onLogoTap: _goToLanding,
+        showHeader: !widget.embed,
+        showFooter: !widget.embed,
         child: SelectionArea(
           child: LayoutBuilder(
             builder: (context, constraints) {

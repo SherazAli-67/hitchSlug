@@ -9,11 +9,15 @@ class PageShell extends StatelessWidget {
     required this.child,
     this.onLogoTap,
     this.centerBody = false,
+    this.showHeader = true,
+    this.showFooter = true,
   });
 
   final Widget child;
   final VoidCallback? onLogoTap;
   final bool centerBody;
+  final bool showHeader;
+  final bool showFooter;
 
   @override
   Widget build(BuildContext context) {
@@ -21,10 +25,10 @@ class PageShell extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          AppHeader(onLogoTap: onLogoTap),
+          if (showHeader) AppHeader(onLogoTap: onLogoTap),
           if (centerBody) ...[
             Expanded(child: Center(child: child)),
-            const AppFooter(),
+            if (showFooter) const AppFooter(),
           ] else
             Expanded(
               child: SingleChildScrollView(
@@ -32,7 +36,7 @@ class PageShell extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     child,
-                    const AppFooter(),
+                    if (showFooter) const AppFooter(),
                   ],
                 ),
               ),
