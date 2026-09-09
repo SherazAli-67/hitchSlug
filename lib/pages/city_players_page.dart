@@ -136,6 +136,11 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
       _seenIds.add(id);
       _players.add(player);
     }
+    _players.sort((a, b) {
+      final aActive = a.lastActive ?? 0;
+      final bActive = b.lastActive ?? 0;
+      return bActive.compareTo(aActive);
+    });
   }
 
   String _resolveDisplayCity(CityPlayersResult result) {
@@ -183,12 +188,22 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
         color: AppColors.primaryColorVariant1,
         child: PageShell(
           onLogoTap: _goToLanding,
-          centerBody: true,
+          centerBody: !widget.embed,
+          fitContent: widget.embed,
           showHeader: !widget.embed,
           showFooter: !widget.embed,
-          child: const CircularProgressIndicator(
-            color: AppColors.primaryGreenColor,
-          ),
+          child: widget.embed
+              ? const SizedBox(
+                  height: 240,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryGreenColor,
+                    ),
+                  ),
+                )
+              : const CircularProgressIndicator(
+                  color: AppColors.primaryGreenColor,
+                ),
         ),
       );
     }
@@ -199,7 +214,8 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
         color: AppColors.primaryColorVariant1,
         child: PageShell(
           onLogoTap: _goToLanding,
-          centerBody: true,
+          centerBody: !widget.embed,
+          fitContent: widget.embed,
           showHeader: !widget.embed,
           showFooter: !widget.embed,
           child: const _MessageState(
@@ -215,6 +231,7 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
       color: AppColors.primaryColorVariant1,
       child: PageShell(
         onLogoTap: _goToLanding,
+        fitContent: widget.embed,
         showHeader: !widget.embed,
         showFooter: !widget.embed,
         child: SelectionArea(
@@ -224,43 +241,50 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
               return Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: isDesktop ? 48 : 20,
-                  vertical: isDesktop ? 40 : 28,
+                  vertical: widget.embed
+                      ? (isDesktop ? 24 : 16)
+                      : (isDesktop ? 40 : 28),
                 ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1100),
+                    constraints: BoxConstraints(
+                      maxWidth: widget.embed ? double.infinity : 1100,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Semantics(
-                          headingLevel: 1,
-                          header: true,
-                          child: Text(
-                            '${StringConst.playersInCityTitle} $_displayCity',
-                            style: TextStyle(
-                              fontFamily: StringConst.fontFamily,
-                              fontSize: isDesktop ? 40 : 32,
-                              fontWeight: FontWeight.w800,
-                              height: 1.1,
-                              color: Colors.black,
+                        if (!widget.embed) ...[
+                          Semantics(
+                            headingLevel: 1,
+                            header: true,
+                            child: Text(
+                              '${StringConst.playersInCityTitle} $_displayCity',
+                              style: TextStyle(
+                                fontFamily: StringConst.fontFamily,
+                                fontSize: isDesktop ? 40 : 32,
+                                fontWeight: FontWeight.w800,
+                                height: 1.1,
+                                color: Colors.black,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Semantics(
-                          headingLevel: 5,
-                          header: true,
-                          child: Text(
-                            StringConst.connectWithPartnersIn(_displayCity),
-                            style: const TextStyle(
-                              fontFamily: StringConst.fontFamily,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primaryColorVariant1,
+                          const SizedBox(height: 8),
+                          Semantics(
+                            headingLevel: 5,
+                            header: true,
+                            child: Text(
+                              StringConst.connectWithPartnersIn(_displayCity),
+                              style: const TextStyle(
+                                fontFamily: StringConst.fontFamily,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryColorVariant1,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 28),
+                          const SizedBox(height: 28),
+                        ],
                         if (_players.isEmpty)
                           const _MessageState(
                             title: StringConst.noPlayersInCity,

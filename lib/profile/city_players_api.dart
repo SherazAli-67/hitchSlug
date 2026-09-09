@@ -30,6 +30,7 @@ class PublicCityPlayer {
     this.pickleBallPlayerLevel,
     this.tennisBallPlayerLevel,
     this.padelBallPlayerLevel,
+    this.lastActive,
   });
 
   final String userID;
@@ -49,6 +50,7 @@ class PublicCityPlayer {
   final PlayerLevelModel? pickleBallPlayerLevel;
   final PlayerLevelModel? tennisBallPlayerLevel;
   final PlayerLevelModel? padelBallPlayerLevel;
+  final int? lastActive;
 
   factory PublicCityPlayer.fromJson(Map<String, dynamic> json) {
     return PublicCityPlayer(
@@ -69,12 +71,30 @@ class PublicCityPlayer {
       pickleBallPlayerLevel: _levelFrom(json['pickleBallPlayerLevel']),
       tennisBallPlayerLevel: _levelFrom(json['tennisBallPlayerLevel']),
       padelBallPlayerLevel: _levelFrom(json['padelBallPlayerLevel']),
+      lastActive: _lastActiveFrom(json['lastActive']),
     );
   }
 
   static PlayerLevelModel? _levelFrom(dynamic value) {
     if (value is Map) {
       return PlayerLevelModel.fromMap(Map<String, dynamic>.from(value));
+    }
+    return null;
+  }
+
+  static int? _lastActiveFrom(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) {
+      final asInt = int.tryParse(value);
+      if (asInt != null) return asInt;
+      return DateTime.tryParse(value)?.millisecondsSinceEpoch;
+    }
+    if (value is Map) {
+      final seconds = value['_seconds'] ?? value['seconds'];
+      if (seconds is num) {
+        return (seconds * 1000).round();
+      }
     }
     return null;
   }
@@ -223,7 +243,12 @@ class CityPlayersApi {
             Map<String, dynamic>.from(item),
           ),
         )
-        .toList();
+        .toList()
+      ..sort((a, b) {
+        final aActive = a.lastActive ?? 0;
+        final bActive = b.lastActive ?? 0;
+        return bActive.compareTo(aActive);
+      });
 
     final responseOffset = (decoded['offset'] as num?)?.toInt() ?? safeOffset;
     final responseLimit = (decoded['limit'] as num?)?.toInt() ?? clampedLimit;

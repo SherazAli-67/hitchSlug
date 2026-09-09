@@ -11,6 +11,7 @@ class PageShell extends StatelessWidget {
     this.centerBody = false,
     this.showHeader = true,
     this.showFooter = true,
+    this.fitContent = false,
   });
 
   final Widget child;
@@ -18,9 +19,25 @@ class PageShell extends StatelessWidget {
   final bool centerBody;
   final bool showHeader;
   final bool showFooter;
+  final bool fitContent;
 
   @override
   Widget build(BuildContext context) {
+    if (fitContent) {
+      return Material(
+        color: Colors.white,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showHeader) AppHeader(onLogoTap: onLogoTap),
+            child,
+            if (showFooter) const AppFooter(),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(

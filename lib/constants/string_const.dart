@@ -112,7 +112,7 @@ class StringConst {
     if (city.isEmpty) {
       return webAppTitle;
     }
-    return 'Players in $city | Hitch';
+    return 'Pickleball, Padel & Tennis Partners | $city | Hitch';
   }
   static const privacyPolicy = 'Privacy Policy';
   static const termsOfService = 'Terms of Service';
