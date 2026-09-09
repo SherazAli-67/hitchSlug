@@ -3,13 +3,13 @@ import 'embed_height_stub.dart'
 
 void notifyCityPlayersEmbedHeight({
   required int playerCount,
-  required bool isDesktop,
+  required int crossAxisCount,
   required bool hasMore,
   required bool compactState,
 }) {
   impl.notifyCityPlayersEmbedHeight(
     playerCount: playerCount,
-    isDesktop: isDesktop,
+    crossAxisCount: crossAxisCount,
     hasMore: hasMore,
     compactState: compactState,
   );

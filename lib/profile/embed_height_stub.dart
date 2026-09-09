@@ -1,6 +1,6 @@
 void notifyCityPlayersEmbedHeight({
   required int playerCount,
-  required bool isDesktop,
+  required int crossAxisCount,
   required bool hasMore,
   required bool compactState,
 }) {}

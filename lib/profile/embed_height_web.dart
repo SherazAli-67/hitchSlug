@@ -6,7 +6,7 @@ const String cityPlayersEmbedHeightMessageType = 'hitch-city-players-height';
 
 void notifyCityPlayersEmbedHeight({
   required int playerCount,
-  required bool isDesktop,
+  required int crossAxisCount,
   required bool hasMore,
   required bool compactState,
 }) {
@@ -17,7 +17,7 @@ void notifyCityPlayersEmbedHeight({
 
   final estimated = _estimateHeight(
     playerCount: playerCount,
-    isDesktop: isDesktop,
+    crossAxisCount: crossAxisCount,
     hasMore: hasMore,
     compactState: compactState,
   );
@@ -30,7 +30,9 @@ void notifyCityPlayersEmbedHeight({
     math.max(docEl?.scrollHeight ?? 0, 0),
   ).toDouble();
 
-  final height = math.max(estimated, measured);
+  final height = compactState
+      ? math.max(measured, 320)
+      : math.max(estimated, measured);
 
   parent?.postMessage(
     jsonEncode({
@@ -43,7 +45,7 @@ void notifyCityPlayersEmbedHeight({
 
 double _estimateHeight({
   required int playerCount,
-  required bool isDesktop,
+  required int crossAxisCount,
   required bool hasMore,
   required bool compactState,
 }) {
@@ -51,9 +53,9 @@ double _estimateHeight({
     return 320;
   }
 
-  final columns = isDesktop ? 3 : 1;
-  final cardHeight = isDesktop ? 470.0 : 560.0;
-  final spacing = isDesktop ? 20.0 : 16.0;
+  final columns = math.max(1, crossAxisCount);
+  final cardHeight = columns >= 3 ? 470.0 : 560.0;
+  final spacing = columns >= 3 ? 20.0 : 16.0;
   final rows = math.max(1, (playerCount / columns).ceil());
   const verticalPadding = 48.0;
   final loadMore = hasMore ? 92.0 : 24.0;

@@ -5,6 +5,7 @@ import '../constants/string_const.dart';
 import '../core/app_colors.dart';
 import '../profile/city_players_api.dart';
 import '../profile/embed_height.dart';
+import '../profile/embed_viewport.dart';
 import '../profile/open_in_app.dart';
 import '../profile/profile_slug.dart';
 import '../profile/seo_meta.dart';
@@ -30,6 +31,7 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
   late final CityPlayersApi _api = widget._api ?? CityPlayersApi();
 
   static const double _desktopBreakpoint = 900;
+  static const double _wideBreakpoint = 1200;
 
   bool _initialLoading = true;
   bool _loadingMore = false;
@@ -38,15 +40,30 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
   String _displayCity = '';
   bool _hasMore = false;
   final Set<String> _seenIds = {};
+  Object? _viewportResizeHandle;
 
   @override
   void initState() {
     super.initState();
     if (!widget.embed) {
       applyDefaultSeo();
+    } else {
+      _viewportResizeHandle = listenEmbedViewportResize(_onEmbedViewportResize);
     }
     _displayCity = citySlugToDisplayName(widget.citySlug);
     _loadInitial();
+  }
+
+  @override
+  void dispose() {
+    cancelEmbedViewportResize(_viewportResizeHandle);
+    super.dispose();
+  }
+
+  void _onEmbedViewportResize() {
+    if (!mounted) return;
+    setState(() {});
+    _scheduleEmbedHeight();
   }
 
   Future<void> _loadInitial() async {
@@ -112,18 +129,30 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
     }
   }
 
+  int _crossAxisCountFor(double width) {
+    if (width >= _wideBreakpoint) return 4;
+    if (width >= _desktopBreakpoint) return 3;
+    return 1;
+  }
+
+  void _notifyEmbedHeight() {
+    if (!widget.embed || !mounted) return;
+    final width = MediaQuery.sizeOf(context).width;
+    notifyCityPlayersEmbedHeight(
+      playerCount: _players.isEmpty ? 1 : _players.length,
+      crossAxisCount: _crossAxisCountFor(width),
+      hasMore: _hasMore,
+      compactState: _initialLoading || _error != null || _players.isEmpty,
+    );
+  }
+
   void _scheduleEmbedHeight() {
     if (!widget.embed) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final isDesktop =
-          MediaQuery.sizeOf(context).width >= _desktopBreakpoint;
-      notifyCityPlayersEmbedHeight(
-        playerCount: _players.isEmpty ? 1 : _players.length,
-        isDesktop: isDesktop,
-        hasMore: _hasMore,
-        compactState: _initialLoading || _error != null || _players.isEmpty,
-      );
+      _notifyEmbedHeight();
+      Future<void>.delayed(const Duration(milliseconds: 80), () {
+        _notifyEmbedHeight();
+      });
     });
   }
 
@@ -227,17 +256,23 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
         child: SelectionArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
+              final width = constraints.maxWidth;
+              final isDesktop = width >= _desktopBreakpoint;
+              final crossAxisCount = _crossAxisCountFor(width);
               return Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: isDesktop ? 48 : 20,
+                  horizontal: widget.embed
+                      ? (isDesktop ? 24 : 16)
+                      : (isDesktop ? 48 : 20),
                   vertical: widget.embed
                       ? (isDesktop ? 24 : 16)
                       : (isDesktop ? 40 : 28),
                 ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1100),
+                    constraints: BoxConstraints(
+                      maxWidth: widget.embed ? double.infinity : 1100,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -281,6 +316,7 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
                           _PlayerGrid(
                             players: _players,
                             isDesktop: isDesktop,
+                            crossAxisCount: crossAxisCount,
                             onCardTap: _openProfile,
                             onLetsPlay: _letsPlay,
                           ),
@@ -344,18 +380,19 @@ class _PlayerGrid extends StatelessWidget {
   const _PlayerGrid({
     required this.players,
     required this.isDesktop,
+    required this.crossAxisCount,
     required this.onCardTap,
     required this.onLetsPlay,
   });
 
   final List<PublicCityPlayer> players;
   final bool isDesktop;
+  final int crossAxisCount;
   final ValueChanged<PublicCityPlayer> onCardTap;
   final ValueChanged<PublicCityPlayer> onLetsPlay;
 
   @override
   Widget build(BuildContext context) {
-    final crossAxisCount = isDesktop ? 3 : 1;
     final spacing = isDesktop ? 20.0 : 16.0;
 
     return LayoutBuilder(
