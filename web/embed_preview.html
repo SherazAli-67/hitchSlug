@@ -30,19 +30,21 @@
       font-weight: 700;
     }
     #hitch-city-players {
-      width: 100%;
-      margin: 32px 0 40px;
-      padding: 0 24px;
+      width: 100vw;
+      max-width: 100vw;
+      margin: 0 0 40px;
+      margin-left: calc(50% - 50vw);
+      padding: 0;
       box-sizing: border-box;
       clear: both;
       position: relative;
-      z-index: 0;
+      z-index: 1;
     }
     #hitch-city-players-frame {
       display: block;
       width: 100%;
-      min-height: 640px;
-      height: 640px;
+      min-height: 320px;
+      height: 320px;
       border: 0;
       overflow: hidden;
       background: #fff;
@@ -80,6 +82,7 @@
   <script>
     (function () {
       var frame = document.getElementById('hitch-city-players-frame');
+      var last = 0;
       window.addEventListener('message', function (event) {
         if (event.origin !== location.origin) return;
         var data = event.data;
@@ -89,14 +92,11 @@
         if (!data || data.type !== 'hitch-city-players-height') return;
         var height = Number(data.height);
         if (!frame || !isFinite(height) || height < 320) return;
-        var next = Math.ceil(height) + 'px';
-        if (frame.style.height === next) return;
-        frame.style.height = next;
-        try {
-          if (frame.contentWindow) {
-            frame.contentWindow.dispatchEvent(new Event('resize'));
-          }
-        } catch (e) {}
+        var next = Math.ceil(height);
+        if (Math.abs(next - last) < 8) return;
+        last = next;
+        frame.style.setProperty('min-height', '0px', 'important');
+        frame.style.setProperty('height', next + 'px', 'important');
       });
     })();
   </script>

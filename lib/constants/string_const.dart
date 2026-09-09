@@ -124,4 +124,9 @@ class StringConst {
   static const safetyCenterUrl = 'https://hitchplayerfinder.com/safety';
   static const supportUrl = 'https://hitchplayerfinder.com/support';
   static const careersUrl = 'https://hitchplayerfinder.com/careers';
+
+  //city description constants
+ /* static const torontoPageTitle = 'Pickleball, Tennis & Padel Partners in Toronto';
+  static const torontoPageDescription = 'Toronto has one of North America’s most diverse racquet sport communities, with thriving pickleball, tennis, and padel scenes spread across the GTA. From elite private clubs to fast-growing indoor pickleball facilities, players can find everything from competitive leagues to social mixers. The city attracts players year-round thanks to its strong indoor infrastructure and active racquet culture.';
+  static const topPlacesToPlay = [];*/
 }

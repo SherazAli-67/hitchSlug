@@ -3,8 +3,13 @@ import 'dart:html' as html;
 import 'dart:math' as math;
 
 const String cityPlayersEmbedHeightMessageType = 'hitch-city-players-height';
+const int _minEmbedHeight = 320;
+const int _heightSlackPx = 8;
+
+int? _lastPostedHeight;
 
 void notifyCityPlayersEmbedHeight({
+  double? contentHeight,
   required int playerCount,
   required int crossAxisCount,
   required bool hasMore,
@@ -15,30 +20,29 @@ void notifyCityPlayersEmbedHeight({
     return;
   }
 
-  final estimated = _estimateHeight(
-    playerCount: playerCount,
-    crossAxisCount: crossAxisCount,
-    hasMore: hasMore,
-    compactState: compactState,
-  );
+  final measured = contentHeight ?? 0;
+  final double height;
+  if (compactState) {
+    height = math.max(measured, _minEmbedHeight.toDouble());
+  } else if (measured > 0) {
+    height = measured;
+  } else {
+    height = _estimateHeight(
+      playerCount: playerCount,
+      crossAxisCount: crossAxisCount,
+      hasMore: hasMore,
+    );
+  }
 
-  final doc = html.document;
-  final body = doc.body;
-  final docEl = doc.documentElement;
-  final measured = math.max(
-    body?.scrollHeight ?? 0,
-    math.max(docEl?.scrollHeight ?? 0, 0),
-  ).toDouble();
-
-  final height = compactState
-      ? math.max(measured, 320)
-      : math.max(estimated, measured);
+  final rounded = math.max(_minEmbedHeight, height.ceil());
+  final last = _lastPostedHeight;
+  if (last != null && (rounded - last).abs() < _heightSlackPx) {
+    return;
+  }
+  _lastPostedHeight = rounded;
 
   parent?.postMessage(
-    jsonEncode({
-      'type': cityPlayersEmbedHeightMessageType,
-      'height': height.round(),
-    }),
+    jsonEncode({'type': cityPlayersEmbedHeightMessageType, 'height': rounded}),
     html.window.location.origin,
   );
 }
@@ -47,12 +51,7 @@ double _estimateHeight({
   required int playerCount,
   required int crossAxisCount,
   required bool hasMore,
-  required bool compactState,
 }) {
-  if (compactState) {
-    return 320;
-  }
-
   final columns = math.max(1, crossAxisCount);
   final cardHeight = columns >= 3 ? 470.0 : 560.0;
   final spacing = columns >= 3 ? 20.0 : 16.0;

@@ -41,6 +41,7 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
   bool _hasMore = false;
   final Set<String> _seenIds = {};
   Object? _viewportResizeHandle;
+  final GlobalKey _embedContentKey = GlobalKey();
 
   @override
   void initState() {
@@ -62,7 +63,6 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
 
   void _onEmbedViewportResize() {
     if (!mounted) return;
-    setState(() {});
     _scheduleEmbedHeight();
   }
 
@@ -135,10 +135,17 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
     return 1;
   }
 
+  double? _embedContentHeight() {
+    final box = _embedContentKey.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return null;
+    return box.size.height;
+  }
+
   void _notifyEmbedHeight() {
     if (!widget.embed || !mounted) return;
     final width = MediaQuery.sizeOf(context).width;
     notifyCityPlayersEmbedHeight(
+      contentHeight: _embedContentHeight(),
       playerCount: _players.isEmpty ? 1 : _players.length,
       crossAxisCount: _crossAxisCountFor(width),
       hasMore: _hasMore,
@@ -150,9 +157,12 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
     if (!widget.embed) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _notifyEmbedHeight();
-      Future<void>.delayed(const Duration(milliseconds: 80), () {
-        _notifyEmbedHeight();
-      });
+      for (final delayMs in const [80, 250]) {
+        Future<void>.delayed(
+          Duration(milliseconds: delayMs),
+          _notifyEmbedHeight,
+        );
+      }
     });
   }
 
@@ -260,12 +270,13 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
               final isDesktop = width >= _desktopBreakpoint;
               final crossAxisCount = _crossAxisCountFor(width);
               return Padding(
+                key: widget.embed ? _embedContentKey : null,
                 padding: EdgeInsets.symmetric(
                   horizontal: widget.embed
-                      ? (isDesktop ? 24 : 16)
+                      ? (isDesktop ? 16 : 12)
                       : (isDesktop ? 48 : 20),
                   vertical: widget.embed
-                      ? (isDesktop ? 24 : 16)
+                      ? (isDesktop ? 16 : 12)
                       : (isDesktop ? 40 : 28),
                 ),
                 child: Center(
@@ -331,9 +342,9 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
                                     backgroundColor:
                                         AppColors.primaryGreenColor,
                                     foregroundColor: Colors.white,
-                                    disabledBackgroundColor:
-                                        AppColors.primaryGreenColor
-                                            .withValues(alpha: 0.6),
+                                    disabledBackgroundColor: AppColors
+                                        .primaryGreenColor
+                                        .withValues(alpha: 0.6),
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 16,
                                     ),
@@ -527,8 +538,9 @@ class _PlayerCardState extends State<_PlayerCard> {
                           child: _CardImage(
                             url: player.profilePicture,
                             displayWidth: widget.imageWidth,
-                            semanticLabel:
-                                StringConst.profilePhotoAlt(player.userName),
+                            semanticLabel: StringConst.profilePhotoAlt(
+                              player.userName,
+                            ),
                           ),
                         ),
                       ),
@@ -710,10 +722,7 @@ class _CardImage extends StatelessWidget {
 }
 
 class _MessageState extends StatelessWidget {
-  const _MessageState({
-    required this.title,
-    required this.subtitle,
-  });
+  const _MessageState({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;

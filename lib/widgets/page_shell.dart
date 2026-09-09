@@ -23,6 +23,18 @@ class PageShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (disableBodyScroll) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: centerBody
+            ? Center(child: child)
+            : SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                child: child,
+              ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -34,15 +46,9 @@ class PageShell extends StatelessWidget {
           ] else
             Expanded(
               child: SingleChildScrollView(
-                physics: disableBodyScroll
-                    ? const NeverScrollableScrollPhysics()
-                    : null,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    child,
-                    if (showFooter) const AppFooter(),
-                  ],
+                  children: [child, if (showFooter) const AppFooter()],
                 ),
               ),
             ),
