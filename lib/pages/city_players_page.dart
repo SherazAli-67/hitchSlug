@@ -160,12 +160,11 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
   }
 
   Future<void> _openProfile(PublicCityPlayer player) async {
-    final slug = player.profileSlug.trim();
+    final slug = player.profileSlug.trim().toLowerCase();
     if (slug.isEmpty) {
       return;
     }
-    final path = player.deepLinkPath(fallbackCitySlug: widget.citySlug);
-    final profileUri = Uri.parse('${Uri.base.origin}$path');
+    final profileUri = Uri.parse('${Uri.base.origin}/player/$slug');
     await launchUrl(
       profileUri,
       webOnlyWindowName: widget.embed ? '_top' : '_self',
@@ -188,22 +187,13 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
         color: AppColors.primaryColorVariant1,
         child: PageShell(
           onLogoTap: _goToLanding,
-          centerBody: !widget.embed,
-          fitContent: widget.embed,
+          centerBody: true,
           showHeader: !widget.embed,
           showFooter: !widget.embed,
-          child: widget.embed
-              ? const SizedBox(
-                  height: 240,
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primaryGreenColor,
-                    ),
-                  ),
-                )
-              : const CircularProgressIndicator(
-                  color: AppColors.primaryGreenColor,
-                ),
+          disableBodyScroll: widget.embed,
+          child: const CircularProgressIndicator(
+            color: AppColors.primaryGreenColor,
+          ),
         ),
       );
     }
@@ -214,10 +204,10 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
         color: AppColors.primaryColorVariant1,
         child: PageShell(
           onLogoTap: _goToLanding,
-          centerBody: !widget.embed,
-          fitContent: widget.embed,
+          centerBody: true,
           showHeader: !widget.embed,
           showFooter: !widget.embed,
+          disableBodyScroll: widget.embed,
           child: const _MessageState(
             title: StringConst.somethingWentWrong,
             subtitle: StringConst.tryAgainLater,
@@ -231,9 +221,9 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
       color: AppColors.primaryColorVariant1,
       child: PageShell(
         onLogoTap: _goToLanding,
-        fitContent: widget.embed,
         showHeader: !widget.embed,
         showFooter: !widget.embed,
+        disableBodyScroll: widget.embed,
         child: SelectionArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -247,12 +237,9 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
                 ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: widget.embed ? double.infinity : 1100,
-                    ),
+                    constraints: const BoxConstraints(maxWidth: 1100),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
                       children: [
                         if (!widget.embed) ...[
                           Semantics(
@@ -383,6 +370,11 @@ class _PlayerGrid extends StatelessWidget {
           children: [
             for (final player in players)
               SizedBox(
+                key: ValueKey(
+                  player.userID.trim().isNotEmpty
+                      ? player.userID.trim()
+                      : player.profileSlug.trim(),
+                ),
                 width: itemWidth,
                 child: RepaintBoundary(
                   child: _PlayerCard(
