@@ -2,6 +2,8 @@ import 'embed_height_stub.dart'
     if (dart.library.html) 'embed_height_web.dart'
     as impl;
 
+double maxSafeEmbedCssHeight() => impl.maxSafeEmbedCssHeight();
+
 void notifyCityPlayersEmbedHeight({
   double? contentHeight,
   required int playerCount,

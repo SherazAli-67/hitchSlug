@@ -1,3 +1,5 @@
+double maxSafeEmbedCssHeight() => 8192;
+
 void notifyCityPlayersEmbedHeight({
   double? contentHeight,
   required int playerCount,

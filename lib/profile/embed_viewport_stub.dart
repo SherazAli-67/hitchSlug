@@ -1,4 +1,7 @@
-Object? listenEmbedViewportResize(void Function() onResize) {
+Object? listenEmbedViewportResize(
+  void Function() onResize, {
+  void Function()? onHeightApplied,
+}) {
   return null;
 }
 

@@ -12,6 +12,8 @@ class PageShell extends StatelessWidget {
     this.showHeader = true,
     this.showFooter = true,
     this.disableBodyScroll = false,
+    this.embedInnerScroll = false,
+    this.embedScrollController,
   });
 
   final Widget child;
@@ -20,6 +22,8 @@ class PageShell extends StatelessWidget {
   final bool showHeader;
   final bool showFooter;
   final bool disableBodyScroll;
+  final bool embedInnerScroll;
+  final ScrollController? embedScrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +33,10 @@ class PageShell extends StatelessWidget {
         body: centerBody
             ? Center(child: child)
             : SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(),
+                controller: embedScrollController,
+                physics: embedInnerScroll
+                    ? const ClampingScrollPhysics()
+                    : const NeverScrollableScrollPhysics(),
                 child: child,
               ),
       );

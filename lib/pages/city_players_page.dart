@@ -42,6 +42,8 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
   final Set<String> _seenIds = {};
   Object? _viewportResizeHandle;
   final GlobalKey _embedContentKey = GlobalKey();
+  final ScrollController _embedScrollController = ScrollController();
+  bool _embedInnerScroll = false;
 
   @override
   void initState() {
@@ -49,7 +51,10 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
     if (!widget.embed) {
       applyDefaultSeo();
     } else {
-      _viewportResizeHandle = listenEmbedViewportResize(_onEmbedViewportResize);
+      _viewportResizeHandle = listenEmbedViewportResize(
+        _onEmbedViewportResize,
+        onHeightApplied: _onEmbedHeightApplied,
+      );
     }
     _displayCity = citySlugToDisplayName(widget.citySlug);
     _loadInitial();
@@ -58,12 +63,18 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
   @override
   void dispose() {
     cancelEmbedViewportResize(_viewportResizeHandle);
+    _embedScrollController.dispose();
     super.dispose();
   }
 
   void _onEmbedViewportResize() {
     if (!mounted) return;
     _scheduleEmbedHeight();
+  }
+
+  void _onEmbedHeightApplied() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   Future<void> _loadInitial() async {
@@ -73,6 +84,7 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
       _players.clear();
       _seenIds.clear();
       _hasMore = false;
+      _embedInnerScroll = false;
     });
 
     try {
@@ -123,6 +135,7 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
         _loadingMore = false;
       });
       _scheduleEmbedHeight();
+      _scheduleEmbedScrollToEnd();
     } catch (_) {
       if (!mounted) return;
       setState(() => _loadingMore = false);
@@ -143,9 +156,21 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
 
   void _notifyEmbedHeight() {
     if (!widget.embed || !mounted) return;
+    final measured = _embedContentHeight();
+    final needsScroll =
+        !_initialLoading &&
+        _error == null &&
+        _players.isNotEmpty &&
+        (measured ?? 0) > maxSafeEmbedCssHeight();
+    if (needsScroll != _embedInnerScroll) {
+      setState(() => _embedInnerScroll = needsScroll);
+      if (needsScroll) {
+        _scheduleEmbedScrollToEnd();
+      }
+    }
     final width = MediaQuery.sizeOf(context).width;
     notifyCityPlayersEmbedHeight(
-      contentHeight: _embedContentHeight(),
+      contentHeight: measured,
       playerCount: _players.isEmpty ? 1 : _players.length,
       crossAxisCount: _crossAxisCountFor(width),
       hasMore: _hasMore,
@@ -166,8 +191,29 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
     });
   }
 
+  void _scrollEmbedToEnd() {
+    if (!mounted || !_embedScrollController.hasClients) return;
+    final position = _embedScrollController.position;
+    if (!position.hasContentDimensions) return;
+    _embedScrollController.jumpTo(position.maxScrollExtent);
+  }
+
+  void _scheduleEmbedScrollToEnd() {
+    if (!widget.embed) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollEmbedToEnd();
+      Future<void>.delayed(const Duration(milliseconds: 80), _scrollEmbedToEnd);
+    });
+  }
+
   void _appendPlayers(List<PublicCityPlayer> next) {
-    for (final player in next) {
+    final incoming = [...next]
+      ..sort((a, b) {
+        final aActive = a.lastActive ?? 0;
+        final bActive = b.lastActive ?? 0;
+        return bActive.compareTo(aActive);
+      });
+    for (final player in incoming) {
       final id = player.userID.trim().isNotEmpty
           ? player.userID.trim()
           : player.profileSlug.trim();
@@ -175,11 +221,6 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
       _seenIds.add(id);
       _players.add(player);
     }
-    _players.sort((a, b) {
-      final aActive = a.lastActive ?? 0;
-      final bActive = b.lastActive ?? 0;
-      return bActive.compareTo(aActive);
-    });
   }
 
   String _resolveDisplayCity(CityPlayersResult result) {
@@ -263,6 +304,8 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
         showHeader: !widget.embed,
         showFooter: !widget.embed,
         disableBodyScroll: widget.embed,
+        embedInnerScroll: widget.embed && _embedInnerScroll,
+        embedScrollController: widget.embed ? _embedScrollController : null,
         child: SelectionArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -408,7 +451,9 @@ class _PlayerGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
+        final width = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
         final itemWidth =
             (width - spacing * (crossAxisCount - 1)) / crossAxisCount;
 

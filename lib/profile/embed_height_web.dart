@@ -5,8 +5,18 @@ import 'dart:math' as math;
 const String cityPlayersEmbedHeightMessageType = 'hitch-city-players-height';
 const int _minEmbedHeight = 320;
 const int _heightSlackPx = 8;
+const double _maxCanvasEdgePx = 8192;
 
 int? _lastPostedHeight;
+
+double maxSafeEmbedCssHeight() {
+  final dpr = html.window.devicePixelRatio;
+  final divisor = dpr <= 0 ? 1.0 : dpr;
+  return math.max(
+    _minEmbedHeight.toDouble(),
+    (_maxCanvasEdgePx / divisor).floorToDouble(),
+  );
+}
 
 void notifyCityPlayersEmbedHeight({
   double? contentHeight,
@@ -34,7 +44,10 @@ void notifyCityPlayersEmbedHeight({
     );
   }
 
-  final rounded = math.max(_minEmbedHeight, height.ceil());
+  final rounded = math.max(
+    _minEmbedHeight,
+    math.min(height, maxSafeEmbedCssHeight()).ceil(),
+  );
   final last = _lastPostedHeight;
   if (last != null && (rounded - last).abs() < _heightSlackPx) {
     return;
