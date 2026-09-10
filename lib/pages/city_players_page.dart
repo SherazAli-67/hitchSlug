@@ -247,7 +247,7 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
     final profileUri = Uri.parse('${Uri.base.origin}/player/$slug');
     await launchUrl(
       profileUri,
-      webOnlyWindowName: widget.embed ? '_top' : '_self',
+      webOnlyWindowName: '_blank',
     );
   }
 
