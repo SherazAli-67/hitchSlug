@@ -44,6 +44,7 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
   final GlobalKey _embedContentKey = GlobalKey();
   final ScrollController _embedScrollController = ScrollController();
   bool _embedInnerScroll = false;
+  bool _didInitialEmbedAlign = false;
 
   @override
   void initState() {
@@ -75,6 +76,12 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
   void _onEmbedHeightApplied() {
     if (!mounted) return;
     setState(() {});
+    if (_didInitialEmbedAlign) return;
+    _didInitialEmbedAlign = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_embedScrollController.hasClients) return;
+      _embedScrollController.jumpTo(0);
+    });
   }
 
   Future<void> _loadInitial() async {
@@ -85,6 +92,7 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
       _seenIds.clear();
       _hasMore = false;
       _embedInnerScroll = false;
+      _didInitialEmbedAlign = false;
     });
 
     try {
@@ -135,7 +143,6 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
         _loadingMore = false;
       });
       _scheduleEmbedHeight();
-      _scheduleEmbedScrollToEnd();
     } catch (_) {
       if (!mounted) return;
       setState(() => _loadingMore = false);
@@ -164,9 +171,6 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
         (measured ?? 0) > maxSafeEmbedCssHeight();
     if (needsScroll != _embedInnerScroll) {
       setState(() => _embedInnerScroll = needsScroll);
-      if (needsScroll) {
-        _scheduleEmbedScrollToEnd();
-      }
     }
     final width = MediaQuery.sizeOf(context).width;
     notifyCityPlayersEmbedHeight(
@@ -188,21 +192,6 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
           _notifyEmbedHeight,
         );
       }
-    });
-  }
-
-  void _scrollEmbedToEnd() {
-    if (!mounted || !_embedScrollController.hasClients) return;
-    final position = _embedScrollController.position;
-    if (!position.hasContentDimensions) return;
-    _embedScrollController.jumpTo(position.maxScrollExtent);
-  }
-
-  void _scheduleEmbedScrollToEnd() {
-    if (!widget.embed) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollEmbedToEnd();
-      Future<void>.delayed(const Duration(milliseconds: 80), _scrollEmbedToEnd);
     });
   }
 
@@ -245,10 +234,7 @@ class _CityPlayersPageState extends State<CityPlayersPage> {
       return;
     }
     final profileUri = Uri.parse('${Uri.base.origin}/player/$slug');
-    await launchUrl(
-      profileUri,
-      webOnlyWindowName: '_blank',
-    );
+    await launchUrl(profileUri, webOnlyWindowName: '_blank');
   }
 
   Future<void> _letsPlay(PublicCityPlayer player) async {

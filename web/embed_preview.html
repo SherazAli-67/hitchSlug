@@ -94,9 +94,11 @@
         var next = Math.ceil(height);
         if (Math.abs(next - last) < 8) return;
         last = next;
+        var scrollY = window.pageYOffset;
         frame.style.setProperty('min-height', '0px', 'important');
         frame.style.setProperty('height', next + 'px', 'important');
         requestAnimationFrame(function () {
+          window.scrollTo(0, scrollY);
           try {
             if (frame.contentWindow) {
               frame.contentWindow.postMessage(
